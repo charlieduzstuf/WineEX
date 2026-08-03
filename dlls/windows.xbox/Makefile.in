@@ -1,0 +1,6 @@
+MODULE    = windows.xbox.dll
+IMPORTS   = combase
+
+SOURCES = \
+	main.c \
+	version.rc

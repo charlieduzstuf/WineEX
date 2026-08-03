@@ -35,6 +35,21 @@
 
 WINE_DEFAULT_DEBUG_CHANNEL(xbox);
 
+/* RuntimeClass names for all known Windows.Xbox.* classes */
+#define RC_XBOX_INPUT_CONTROLLER            L"Windows.Xbox.Input.Controller"
+#define RC_XBOX_INPUT_GAMEPAD               L"Windows.Xbox.Input.Gamepad"
+#define RC_XBOX_INPUT_NAVCONTROLLER         L"Windows.Xbox.Input.NavigationController"
+#define RC_XBOX_INPUT_BODYCONTROLLER        L"Windows.Xbox.Input.BodyController"
+
+#define RC_XBOX_SYSTEM_USER                 L"Windows.Xbox.System.User"
+#define RC_XBOX_SYSTEM_USERDISPLAYINFO      L"Windows.Xbox.System.UserDisplayInfo"
+#define RC_XBOX_SYSTEM_AUDIODEVICEINFO      L"Windows.Xbox.System.AudioDeviceInfo"
+
+#define RC_XBOX_APPMODEL_PACKAGE            L"Windows.Xbox.ApplicationModel.Package"
+#define RC_XBOX_APPMODEL_CURRENT            L"Windows.Xbox.ApplicationModel.Package.Current"
+
+#define RC_XBOX_UI_SYSTEMUI                 L"Windows.Xbox.UI.SystemUI"
+
 HRESULT WINAPI DllGetClassObject( REFCLSID clsid, REFIID riid, void **out )
 {
     FIXME( "clsid %s, riid %s, out %p stub!\n", debugstr_guid(clsid), debugstr_guid(riid), out );
@@ -54,8 +69,29 @@ HRESULT WINAPI DllGetActivationFactory( HSTRING classid, IActivationFactory **fa
 
     *factory = NULL;
 
-    /* All Windows.Xbox.* classes are stubbed - games can load and see
-     * we exist, but functionality is not implemented yet. */
-    FIXME("class %s not implemented!\n", debugstr_hstring(classid));
+    /* Windows.Xbox.Input — gamepad/controller input */
+    if (!wcscmp( name, RC_XBOX_INPUT_GAMEPAD ) ||
+        !wcscmp( name, RC_XBOX_INPUT_CONTROLLER ) ||
+        !wcscmp( name, RC_XBOX_INPUT_NAVCONTROLLER ) ||
+        !wcscmp( name, RC_XBOX_INPUT_BODYCONTROLLER ))
+    {
+        FIXME("Windows.Xbox.Input class %s not implemented, "
+              "see windows.gaming.input for PC equivalent\n",
+              debugstr_w(name));
+        return CLASS_E_CLASSNOTAVAILABLE;
+    }
+
+    /* Windows.Xbox.System — user management */
+    if (!wcscmp( name, RC_XBOX_SYSTEM_USER ) ||
+        !wcscmp( name, RC_XBOX_SYSTEM_USERDISPLAYINFO ) ||
+        !wcscmp( name, RC_XBOX_SYSTEM_AUDIODEVICEINFO ))
+    {
+        FIXME("Windows.Xbox.System class %s not implemented\n", debugstr_w(name));
+        return CLASS_E_CLASSNOTAVAILABLE;
+    }
+
+    /* Everything else — generic stub */
+    FIXME("Xbox WinRT class %s not implemented!\n", debugstr_hstring(classid));
     return CLASS_E_CLASSNOTAVAILABLE;
 }
+

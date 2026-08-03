@@ -14561,7 +14561,7 @@ configure:10987: $? = 0
 configure:10994: result: yes
 configure:11013: checking for pthread_attr_get_np
 configure:11013: gcc -o conftest -g -O2   conftest.c   >&5
-/usr/bin/ld: /tmp/ccnHlIs2.o: in function `main':
+/usr/bin/ld: /tmp/ccFY4BjA.o: in function `main':
 /home/runner/work/WineEX/WineEX/conftest.c:152:(.text.startup+0xb): undefined reference to `pthread_attr_get_np'
 collect2: error: ld returned 1 exit status
 configure:11013: $? = 1
@@ -14728,7 +14728,7 @@ configure:11013: $? = 0
 configure:11013: result: yes
 configure:11013: checking for pthread_getthreadid_np
 configure:11013: gcc -o conftest -g -O2   conftest.c   >&5
-/usr/bin/ld: /tmp/ccMls6C9.o: in function `main':
+/usr/bin/ld: /tmp/ccR317AC.o: in function `main':
 /home/runner/work/WineEX/WineEX/conftest.c:153:(.text.startup+0xb): undefined reference to `pthread_getthreadid_np'
 collect2: error: ld returned 1 exit status
 configure:11013: $? = 1
@@ -14892,7 +14892,7 @@ configure: failed program was:
 configure:11013: result: no
 configure:11013: checking for pthread_get_stackaddr_np
 configure:11013: gcc -o conftest -g -O2   conftest.c   >&5
-/usr/bin/ld: /tmp/cczeEoPB.o: in function `main':
+/usr/bin/ld: /tmp/ccRW4rqc.o: in function `main':
 /home/runner/work/WineEX/WineEX/conftest.c:153:(.text.startup+0xb): undefined reference to `pthread_get_stackaddr_np'
 collect2: error: ld returned 1 exit status
 configure:11013: $? = 1
@@ -15056,7 +15056,7 @@ configure: failed program was:
 configure:11013: result: no
 configure:11013: checking for pthread_get_stacksize_np
 configure:11013: gcc -o conftest -g -O2   conftest.c   >&5
-/usr/bin/ld: /tmp/ccWsyDsa.o: in function `main':
+/usr/bin/ld: /tmp/ccjolqZo.o: in function `main':
 /home/runner/work/WineEX/WineEX/conftest.c:153:(.text.startup+0xb): undefined reference to `pthread_get_stacksize_np'
 collect2: error: ld returned 1 exit status
 configure:11013: $? = 1
@@ -16873,8 +16873,8 @@ configure: failed program was:
 configure:12874: result: yes
 configure:12882: checking whether external symbols need an underscore prefix
 configure:12898: gcc -o conftest -g -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0   conftest.c  >&5
-/usr/bin/ld: /tmp/cc2Z4o5C.o: warning: relocation against `ac_test' in read-only section `.text.startup'
-/usr/bin/ld: /tmp/cc2Z4o5C.o: in function `main':
+/usr/bin/ld: /tmp/ccTADSsD.o: warning: relocation against `ac_test' in read-only section `.text.startup'
+/usr/bin/ld: /tmp/ccTADSsD.o: in function `main':
 /home/runner/work/WineEX/WineEX/conftest.c:126:(.text.startup+0xa): undefined reference to `ac_test'
 /usr/bin/ld: warning: creating DT_TEXTREL in a PIE
 collect2: error: ld returned 1 exit status
@@ -17168,7 +17168,7 @@ configure:13116: $? = 0
 configure:13123: result: yes
 configure:13276: checking for _finite
 configure:13276: gcc -o conftest -g -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -fno-builtin   conftest.c  >&5
-/usr/bin/ld: /tmp/ccMm6UwS.o: in function `main':
+/usr/bin/ld: /tmp/ccBIGa8J.o: in function `main':
 /home/runner/work/WineEX/WineEX/conftest.c:163:(.text.startup+0xb): undefined reference to `_finite'
 collect2: error: ld returned 1 exit status
 configure:13276: $? = 1
@@ -17342,7 +17342,7 @@ configure: failed program was:
 configure:13276: result: no
 configure:13276: checking for _isnan
 configure:13276: gcc -o conftest -g -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -fno-builtin   conftest.c  >&5
-/usr/bin/ld: /tmp/ccE79BRh.o: in function `main':
+/usr/bin/ld: /tmp/ccKrFNGk.o: in function `main':
 /home/runner/work/WineEX/WineEX/conftest.c:163:(.text.startup+0xb): undefined reference to `_isnan'
 collect2: error: ld returned 1 exit status
 configure:13276: $? = 1
@@ -17516,7 +17516,7 @@ configure: failed program was:
 configure:13276: result: no
 configure:13276: checking for _pclose
 configure:13276: gcc -o conftest -g -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -fno-builtin   conftest.c  >&5
-/usr/bin/ld: /tmp/ccrURwtT.o: in function `main':
+/usr/bin/ld: /tmp/ccsMdY9g.o: in function `main':
 /home/runner/work/WineEX/WineEX/conftest.c:163:(.text.startup+0xb): undefined reference to `_pclose'
 collect2: error: ld returned 1 exit status
 configure:13276: $? = 1
@@ -17690,7 +17690,7 @@ configure: failed program was:
 configure:13276: result: no
 configure:13276: checking for _popen
 configure:13276: gcc -o conftest -g -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -fno-builtin   conftest.c  >&5
-/usr/bin/ld: /tmp/ccrV92rY.o: in function `main':
+/usr/bin/ld: /tmp/cchJyW8f.o: in function `main':
 /home/runner/work/WineEX/WineEX/conftest.c:163:(.text.startup+0xb): undefined reference to `_popen'
 collect2: error: ld returned 1 exit status
 configure:13276: $? = 1
@@ -17864,7 +17864,7 @@ configure: failed program was:
 configure:13276: result: no
 configure:13276: checking for _snprintf
 configure:13276: gcc -o conftest -g -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -fno-builtin   conftest.c  >&5
-/usr/bin/ld: /tmp/ccYokQEk.o: in function `main':
+/usr/bin/ld: /tmp/ccjR4Vsa.o: in function `main':
 /home/runner/work/WineEX/WineEX/conftest.c:163:(.text.startup+0xb): undefined reference to `_snprintf'
 collect2: error: ld returned 1 exit status
 configure:13276: $? = 1
@@ -18038,7 +18038,7 @@ configure: failed program was:
 configure:13276: result: no
 configure:13276: checking for _spawnvp
 configure:13276: gcc -o conftest -g -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -fno-builtin   conftest.c  >&5
-/usr/bin/ld: /tmp/ccqtpVOI.o: in function `main':
+/usr/bin/ld: /tmp/ccs4KrcJ.o: in function `main':
 /home/runner/work/WineEX/WineEX/conftest.c:163:(.text.startup+0xb): undefined reference to `_spawnvp'
 collect2: error: ld returned 1 exit status
 configure:13276: $? = 1
@@ -18212,7 +18212,7 @@ configure: failed program was:
 configure:13276: result: no
 configure:13276: checking for _strdup
 configure:13276: gcc -o conftest -g -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -fno-builtin   conftest.c  >&5
-/usr/bin/ld: /tmp/cc6JbOXv.o: in function `main':
+/usr/bin/ld: /tmp/cc2dAc0W.o: in function `main':
 /home/runner/work/WineEX/WineEX/conftest.c:163:(.text.startup+0xb): undefined reference to `_strdup'
 collect2: error: ld returned 1 exit status
 configure:13276: $? = 1
@@ -18386,7 +18386,7 @@ configure: failed program was:
 configure:13276: result: no
 configure:13276: checking for _stricmp
 configure:13276: gcc -o conftest -g -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -fno-builtin   conftest.c  >&5
-/usr/bin/ld: /tmp/cccWxbXu.o: in function `main':
+/usr/bin/ld: /tmp/ccGs0c0H.o: in function `main':
 /home/runner/work/WineEX/WineEX/conftest.c:163:(.text.startup+0xb): undefined reference to `_stricmp'
 collect2: error: ld returned 1 exit status
 configure:13276: $? = 1
@@ -18560,7 +18560,7 @@ configure: failed program was:
 configure:13276: result: no
 configure:13276: checking for _strnicmp
 configure:13276: gcc -o conftest -g -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -fno-builtin   conftest.c  >&5
-/usr/bin/ld: /tmp/ccaGgy0s.o: in function `main':
+/usr/bin/ld: /tmp/ccEa3rWJ.o: in function `main':
 /home/runner/work/WineEX/WineEX/conftest.c:163:(.text.startup+0xb): undefined reference to `_strnicmp'
 collect2: error: ld returned 1 exit status
 configure:13276: $? = 1
@@ -18734,7 +18734,7 @@ configure: failed program was:
 configure:13276: result: no
 configure:13276: checking for _strtoi64
 configure:13276: gcc -o conftest -g -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -fno-builtin   conftest.c  >&5
-/usr/bin/ld: /tmp/cc8vjx4X.o: in function `main':
+/usr/bin/ld: /tmp/ccO7Nxek.o: in function `main':
 /home/runner/work/WineEX/WineEX/conftest.c:163:(.text.startup+0xb): undefined reference to `_strtoi64'
 collect2: error: ld returned 1 exit status
 configure:13276: $? = 1
@@ -18908,7 +18908,7 @@ configure: failed program was:
 configure:13276: result: no
 configure:13276: checking for _strtoui64
 configure:13276: gcc -o conftest -g -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -fno-builtin   conftest.c  >&5
-/usr/bin/ld: /tmp/ccbAnyLy.o: in function `main':
+/usr/bin/ld: /tmp/cclJGSox.o: in function `main':
 /home/runner/work/WineEX/WineEX/conftest.c:163:(.text.startup+0xb): undefined reference to `_strtoui64'
 collect2: error: ld returned 1 exit status
 configure:13276: $? = 1
@@ -19082,7 +19082,7 @@ configure: failed program was:
 configure:13276: result: no
 configure:13276: checking for _vsnprintf
 configure:13276: gcc -o conftest -g -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -fno-builtin   conftest.c  >&5
-/usr/bin/ld: /tmp/ccx1Bt5d.o: in function `main':
+/usr/bin/ld: /tmp/ccDThYWf.o: in function `main':
 /home/runner/work/WineEX/WineEX/conftest.c:163:(.text.startup+0xb): undefined reference to `_vsnprintf'
 collect2: error: ld returned 1 exit status
 configure:13276: $? = 1
@@ -19260,7 +19260,7 @@ configure:13276: $? = 0
 configure:13276: result: yes
 configure:13276: checking for chsize
 configure:13276: gcc -o conftest -g -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -fno-builtin   conftest.c  >&5
-/usr/bin/ld: /tmp/ccSTzQcI.o: in function `main':
+/usr/bin/ld: /tmp/ccoYcEl3.o: in function `main':
 /home/runner/work/WineEX/WineEX/conftest.c:164:(.text.startup+0xb): undefined reference to `chsize'
 collect2: error: ld returned 1 exit status
 configure:13276: $? = 1
@@ -19459,7 +19459,7 @@ configure:13276: $? = 0
 configure:13276: result: yes
 configure:13276: checking for fpclass
 configure:13276: gcc -o conftest -g -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -fno-builtin   conftest.c  >&5
-/usr/bin/ld: /tmp/ccL0w4rN.o: in function `main':
+/usr/bin/ld: /tmp/cccIqT2F.o: in function `main':
 /home/runner/work/WineEX/WineEX/conftest.c:170:(.text.startup+0xb): undefined reference to `fpclass'
 collect2: error: ld returned 1 exit status
 configure:13276: $? = 1
@@ -19664,7 +19664,7 @@ configure:13276: $? = 0
 configure:13276: result: yes
 configure:13276: checking for getattrlist
 configure:13276: gcc -o conftest -g -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -fno-builtin   conftest.c  >&5
-/usr/bin/ld: /tmp/ccNtKq9d.o: in function `main':
+/usr/bin/ld: /tmp/ccP23zFb.o: in function `main':
 /home/runner/work/WineEX/WineEX/conftest.c:176:(.text.startup+0xb): undefined reference to `getattrlist'
 collect2: error: ld returned 1 exit status
 configure:13276: $? = 1
@@ -19871,7 +19871,7 @@ configure:13276: $? = 0
 configure:13276: result: yes
 configure:13276: checking for kqueue
 configure:13276: gcc -o conftest -g -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -fno-builtin   conftest.c  >&5
-/usr/bin/ld: /tmp/cc4ng2Qu.o: in function `main':
+/usr/bin/ld: /tmp/cc622lsx.o: in function `main':
 /home/runner/work/WineEX/WineEX/conftest.c:181:(.text.startup+0xb): undefined reference to `kqueue'
 collect2: error: ld returned 1 exit status
 configure:13276: $? = 1
@@ -20091,7 +20091,7 @@ configure:13276: $? = 0
 configure:13276: result: yes
 configure:13276: checking for port_create
 configure:13276: gcc -o conftest -g -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -fno-builtin   conftest.c  >&5
-/usr/bin/ld: /tmp/ccs4kgJ2.o: in function `main':
+/usr/bin/ld: /tmp/cckyvrAZ.o: in function `main':
 /home/runner/work/WineEX/WineEX/conftest.c:188:(.text.startup+0xb): undefined reference to `port_create'
 collect2: error: ld returned 1 exit status
 configure:13276: $? = 1
@@ -20318,7 +20318,7 @@ configure:13276: $? = 0
 configure:13276: result: yes
 configure:13276: checking for setproctitle
 configure:13276: gcc -o conftest -g -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -fno-builtin   conftest.c  >&5
-/usr/bin/ld: /tmp/ccWSrqYK.o: in function `main':
+/usr/bin/ld: /tmp/ccBk5nMA.o: in function `main':
 /home/runner/work/WineEX/WineEX/conftest.c:195:(.text.startup+0xb): undefined reference to `setproctitle'
 collect2: error: ld returned 1 exit status
 configure:13276: $? = 1
@@ -20588,7 +20588,7 @@ configure:13276: $? = 0
 configure:13276: result: yes
 configure:13276: checking for thr_kill2
 configure:13276: gcc -o conftest -g -O2 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -fno-builtin   conftest.c  >&5
-/usr/bin/ld: /tmp/ccTfaAAe.o: in function `main':
+/usr/bin/ld: /tmp/ccJK372K.o: in function `main':
 /home/runner/work/WineEX/WineEX/conftest.c:211:(.text.startup+0xb): undefined reference to `thr_kill2'
 collect2: error: ld returned 1 exit status
 configure:13276: $? = 1
@@ -35789,7 +35789,7 @@ configure:14947: $? = 0
 configure:14955: result: yes
 configure:14993: checking whether we need to define __x86_64__
 configure:15013: result: no
-configure:16640: creating ./config.status
+configure:16642: creating ./config.status
 
 ## ---------------------- ##
 ## Running config.status. ##
@@ -35806,50 +35806,50 @@ generated by GNU Autoconf 2.69.  Invocation command line was
 
 on runnervmvrwv9
 
-config.status:19277: creating Make.rules
-config.status:19277: creating Maketest.rules
-config.status:19277: creating dlls/Makedll.rules
-config.status:19277: creating dlls/Makeimplib.rules
-config.status:19277: creating programs/Makeprog.rules
-config.status:19277: creating Make.tmp
-config.status:19277: creating include/config.h
-config.status:19457: include/config.h is unchanged
-config.status:19483: linking AUTHORS to dlls/shell32/AUTHORS
-config.status:19483: linking tools/winewrapper to wine
-config.status:19483: linking tools/winewrapper to wine64
-config.status:19502: executing include/stamp-h commands
-config.status:19502: executing dlls/gdi32/dibdrv commands
-config.status:19502: executing dlls/gdi32/enhmfdrv commands
-config.status:19502: executing dlls/gdi32/mfdrv commands
-config.status:19502: executing dlls/kernel32/nls commands
-config.status:19502: executing dlls/user32/resources commands
-config.status:19502: executing dlls/wineps.drv/data commands
-config.status:19502: executing include/wine commands
-config.status:19502: executing Makefile commands
-configure:17955: OpenCL development files not found, OpenCL won't be supported.
-configure:17955: libdbus development files not found, no dynamic device support.
-configure:17955: libgnutls development files not found, no schannel support.
-configure:17955: libsane development files not found, scanners won't be supported.
-configure:17955: libv4l development files not found.
-configure:17955: libgphoto2 development files not found, digital cameras won't be supported.
-configure:17955: libgphoto2_port development files not found, digital cameras won't be auto-detected.
-configure:17955: liblcms2 development files not found, Color Management won't be supported.
-configure:17955: gstreamer-0.10 base plugins development files not found, gstreamer support disabled
-configure:17955: OSS sound system found but too old (OSSv4 needed), OSS won't be supported.
-configure:17955: libcapi20 development files not found, ISDN won't be supported.
-configure:17955: libcups development files not found, CUPS won't be supported.
-configure:17955: fontconfig development files not found, fontconfig won't be supported.
-configure:17955: libgsm development files not found, gsm 06.10 codec won't be supported.
-configure:17955: libtiff development files not found, TIFF won't be supported.
-configure:17955: libmpg123 development files not found (or too old), mp3 codec won't be supported.
-configure:17955: libopenal development files not found (or too old), OpenAL won't be supported.
-configure:17955: libldap (OpenLDAP) development files not found, LDAP won't be supported.
-configure:17965: WARNING: gettext tools not found (or too old), translations won't be built.
-configure:17965: WARNING: prelink not found, base address of core dlls won't be set correctly.
-configure:17965: WARNING: libxslt development files not found, xslt won't be supported.
-configure:17965: WARNING: libjpeg development files not found, JPEG won't be supported.
-configure:17965: WARNING: libpng development files not found, PNG won't be supported.
-configure:17965: WARNING: No sound system was found. Windows applications will be silent.
+config.status:19329: creating Make.rules
+config.status:19329: creating Maketest.rules
+config.status:19329: creating dlls/Makedll.rules
+config.status:19329: creating dlls/Makeimplib.rules
+config.status:19329: creating programs/Makeprog.rules
+config.status:19329: creating Make.tmp
+config.status:19329: creating include/config.h
+config.status:19509: include/config.h is unchanged
+config.status:19535: linking AUTHORS to dlls/shell32/AUTHORS
+config.status:19535: linking tools/winewrapper to wine
+config.status:19535: linking tools/winewrapper to wine64
+config.status:19554: executing include/stamp-h commands
+config.status:19554: executing dlls/gdi32/dibdrv commands
+config.status:19554: executing dlls/gdi32/enhmfdrv commands
+config.status:19554: executing dlls/gdi32/mfdrv commands
+config.status:19554: executing dlls/kernel32/nls commands
+config.status:19554: executing dlls/user32/resources commands
+config.status:19554: executing dlls/wineps.drv/data commands
+config.status:19554: executing include/wine commands
+config.status:19554: executing Makefile commands
+configure:17957: OpenCL development files not found, OpenCL won't be supported.
+configure:17957: libdbus development files not found, no dynamic device support.
+configure:17957: libgnutls development files not found, no schannel support.
+configure:17957: libsane development files not found, scanners won't be supported.
+configure:17957: libv4l development files not found.
+configure:17957: libgphoto2 development files not found, digital cameras won't be supported.
+configure:17957: libgphoto2_port development files not found, digital cameras won't be auto-detected.
+configure:17957: liblcms2 development files not found, Color Management won't be supported.
+configure:17957: gstreamer-0.10 base plugins development files not found, gstreamer support disabled
+configure:17957: OSS sound system found but too old (OSSv4 needed), OSS won't be supported.
+configure:17957: libcapi20 development files not found, ISDN won't be supported.
+configure:17957: libcups development files not found, CUPS won't be supported.
+configure:17957: fontconfig development files not found, fontconfig won't be supported.
+configure:17957: libgsm development files not found, gsm 06.10 codec won't be supported.
+configure:17957: libtiff development files not found, TIFF won't be supported.
+configure:17957: libmpg123 development files not found (or too old), mp3 codec won't be supported.
+configure:17957: libopenal development files not found (or too old), OpenAL won't be supported.
+configure:17957: libldap (OpenLDAP) development files not found, LDAP won't be supported.
+configure:17967: WARNING: gettext tools not found (or too old), translations won't be built.
+configure:17967: WARNING: prelink not found, base address of core dlls won't be set correctly.
+configure:17967: WARNING: libxslt development files not found, xslt won't be supported.
+configure:17967: WARNING: libjpeg development files not found, JPEG won't be supported.
+configure:17967: WARNING: libpng development files not found, PNG won't be supported.
+configure:17967: WARNING: No sound system was found. Windows applications will be silent.
 
 ## ---------------- ##
 ## Cache variables. ##

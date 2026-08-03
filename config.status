@@ -2809,6 +2809,58 @@ dlls/d3d11/__install-lib__:: dlls/d3d11 $(DESTDIR)$(dlldir) $(DESTDIR)$(fakedlld
 	$(INSTALL_DATA) dlls/d3d11/d3d11.dll.fake $(DESTDIR)$(fakedlldir)/d3d11.dll
 dlls/d3d11/__uninstall__::
 	$(RM) $(DESTDIR)$(dlldir)/d3d11.dll.so $(DESTDIR)$(fakedlldir)/d3d11.dll
+__clean__: dlls/d3d11_x/__clean__
+.PHONY: dlls/d3d11_x/__clean__
+dlls/d3d11_x/__clean__: dlls/d3d11_x/Makefile
+	@cd dlls/d3d11_x && $(MAKE) clean
+	$(RM) dlls/d3d11_x/Makefile
+dlls/d3d11_x/Makefile: dlls/d3d11_x/Makefile.in Make.vars.in config.status dlls/Makedll.rules $(MAKEDEP)
+	@./config.status --file dlls/d3d11_x/Makefile:Make.vars.in:dlls/d3d11_x/Makefile.in && cd dlls/d3d11_x && $(MAKE) depend
+depend: dlls/d3d11_x/__depend__
+.PHONY: dlls/d3d11_x/__depend__
+dlls/d3d11_x/__depend__: dlls/Makedll.rules $(MAKEDEP) dummy
+	@./config.status --file dlls/d3d11_x/Makefile:Make.vars.in:dlls/d3d11_x/Makefile.in && cd dlls/d3d11_x && $(MAKE) depend
+all: dlls/d3d11_x
+.PHONY: dlls/d3d11_x
+dlls/d3d11_x: dlls/d3d11_x/Makefile dummy
+	@cd dlls/d3d11_x && $(MAKE)
+dlls/d3d11_x: __builddeps__
+manpages htmlpages sgmlpages xmlpages:: dlls/d3d11_x/Makefile
+	@cd dlls/d3d11_x && $(MAKE) $@
+.PHONY: dlls/d3d11_x/__install-lib__ dlls/d3d11_x/__uninstall__
+install install-lib:: dlls/d3d11_x/__install-lib__
+__uninstall__: dlls/d3d11_x/__uninstall__
+dlls/d3d11_x/__install-lib__:: dlls/d3d11_x $(DESTDIR)$(dlldir) $(DESTDIR)$(fakedlldir)
+	$(INSTALL_PROGRAM) dlls/d3d11_x/d3d11_x.dll.so $(DESTDIR)$(dlldir)/d3d11_x.dll.so
+	$(INSTALL_DATA) dlls/d3d11_x/d3d11_x.dll.fake $(DESTDIR)$(fakedlldir)/d3d11_x.dll
+dlls/d3d11_x/__uninstall__::
+	$(RM) $(DESTDIR)$(dlldir)/d3d11_x.dll.so $(DESTDIR)$(fakedlldir)/d3d11_x.dll
+__clean__: dlls/d3d12_x/__clean__
+.PHONY: dlls/d3d12_x/__clean__
+dlls/d3d12_x/__clean__: dlls/d3d12_x/Makefile
+	@cd dlls/d3d12_x && $(MAKE) clean
+	$(RM) dlls/d3d12_x/Makefile
+dlls/d3d12_x/Makefile: dlls/d3d12_x/Makefile.in Make.vars.in config.status dlls/Makedll.rules $(MAKEDEP)
+	@./config.status --file dlls/d3d12_x/Makefile:Make.vars.in:dlls/d3d12_x/Makefile.in && cd dlls/d3d12_x && $(MAKE) depend
+depend: dlls/d3d12_x/__depend__
+.PHONY: dlls/d3d12_x/__depend__
+dlls/d3d12_x/__depend__: dlls/Makedll.rules $(MAKEDEP) dummy
+	@./config.status --file dlls/d3d12_x/Makefile:Make.vars.in:dlls/d3d12_x/Makefile.in && cd dlls/d3d12_x && $(MAKE) depend
+all: dlls/d3d12_x
+.PHONY: dlls/d3d12_x
+dlls/d3d12_x: dlls/d3d12_x/Makefile dummy
+	@cd dlls/d3d12_x && $(MAKE)
+dlls/d3d12_x: __builddeps__
+manpages htmlpages sgmlpages xmlpages:: dlls/d3d12_x/Makefile
+	@cd dlls/d3d12_x && $(MAKE) $@
+.PHONY: dlls/d3d12_x/__install-lib__ dlls/d3d12_x/__uninstall__
+install install-lib:: dlls/d3d12_x/__install-lib__
+__uninstall__: dlls/d3d12_x/__uninstall__
+dlls/d3d12_x/__install-lib__:: dlls/d3d12_x $(DESTDIR)$(dlldir) $(DESTDIR)$(fakedlldir)
+	$(INSTALL_PROGRAM) dlls/d3d12_x/d3d12_x.dll.so $(DESTDIR)$(dlldir)/d3d12_x.dll.so
+	$(INSTALL_DATA) dlls/d3d12_x/d3d12_x.dll.fake $(DESTDIR)$(fakedlldir)/d3d12_x.dll
+dlls/d3d12_x/__uninstall__::
+	$(RM) $(DESTDIR)$(dlldir)/d3d12_x.dll.so $(DESTDIR)$(fakedlldir)/d3d12_x.dll
 __clean__: dlls/d3d8/__clean__
 .PHONY: dlls/d3d8/__clean__
 dlls/d3d8/__clean__: dlls/d3d8/Makefile
@@ -18437,7 +18489,7 @@ $(MAKEDEP): tools/Makefile
 clean:: __clean__
 	$(RM) tools/makedep$(EXEEXT)
 _WINE_EOF
-    as_fn_error 0 "could not create Makefile" "17216" 5
+    as_fn_error 0 "could not create Makefile" "17218" 5
 }
 
 

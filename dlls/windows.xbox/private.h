@@ -145,3 +145,12 @@ extern IActivationFactory *xbox_storage_factory;
 
 /* appmodel.c */
 extern IActivationFactory *xbox_appmodel_core_factory;
+
+/* sysui.c */
+extern IActivationFactory *xbox_sysui_factory;
+
+/* multiplayer.c */
+extern IActivationFactory *xbox_multiplayer_factory;
+
+/* networking.c */
+extern IActivationFactory *xbox_networking_factory;

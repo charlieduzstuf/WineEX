@@ -1,11 +1,15 @@
 MODULE    = windows.xbox.dll
-IMPORTS   = combase uuid
+IMPORTS   = combase shell32 uuid
 
 SOURCES = \
+	appmodel.c \
 	classes.idl \
+	controller.c \
 	gamepad.c \
 	input.idl \
 	main.c \
+	storage.c \
+	user.c \
 	vector.c \
 	version.rc \
 	wgi_backend.c

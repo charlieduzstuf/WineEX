@@ -88,6 +88,14 @@ HRESULT WINAPI DllGetActivationFactory( HSTRING classid, IActivationFactory **fa
         return S_OK;
     }
 
+    if (!wcscmp( name, RuntimeClass_Windows_Xbox_Input_Controller ))
+    {
+        TRACE( "Windows.Xbox.Input.Controller\n" );
+        *factory = xbox_controller_factory;
+        IActivationFactory_AddRef(*factory);
+        return S_OK;
+    }
+
     if (!wcsncmp( name, L"Windows.Xbox.Input.", 19 ))
     {
         FIXME("Windows.Xbox.Input stub for %s\n", debugstr_w(name));
@@ -96,10 +104,34 @@ HRESULT WINAPI DllGetActivationFactory( HSTRING classid, IActivationFactory **fa
         return S_OK;
     }
 
+    if (!wcscmp( name, L"Windows.Xbox.System.User" ))
+    {
+        TRACE( "Windows.Xbox.System.User\n" );
+        *factory = xbox_user_factory;
+        IActivationFactory_AddRef(*factory);
+        return S_OK;
+    }
+
+    if (!wcscmp( name, L"Windows.Xbox.Storage.ConnectedStorageSpace" ))
+    {
+        TRACE( "Windows.Xbox.Storage.ConnectedStorageSpace\n" );
+        *factory = xbox_storage_factory;
+        IActivationFactory_AddRef(*factory);
+        return S_OK;
+    }
+
     if (!wcsncmp( name, L"Windows.Xbox.System.", 20 ))
     {
         FIXME("Windows.Xbox.System stub for %s\n", debugstr_w(name));
         *factory = &xbox_system_factory_instance.IActivationFactory_iface;
+        IActivationFactory_AddRef(*factory);
+        return S_OK;
+    }
+
+    if (!wcscmp( name, L"Windows.Xbox.ApplicationModel.Core.CoreApplicationContext" ))
+    {
+        TRACE( "Windows.Xbox.ApplicationModel.Core.CoreApplicationContext\n" );
+        *factory = xbox_appmodel_core_factory;
         IActivationFactory_AddRef(*factory);
         return S_OK;
     }

@@ -1890,6 +1890,7 @@ static void dump_get_window_rectangles_reply( const struct get_window_rectangles
 {
     dump_rectangle( " window=", &req->window );
     dump_rectangle( ", client=", &req->client );
+    dump_rectangle( ", visible=", &req->visible );
 }
 
 static void dump_get_window_text_request( const struct get_window_text_request *req )
@@ -4550,6 +4551,7 @@ static const struct
     { "INVALID_PIPE_STATE",          STATUS_INVALID_PIPE_STATE },
     { "INVALID_READ_MODE",           STATUS_INVALID_READ_MODE },
     { "INVALID_SECURITY_DESCR",      STATUS_INVALID_SECURITY_DESCR },
+    { "INVALID_STATE_TRANSITION",    STATUS_INVALID_STATE_TRANSITION },
     { "INVALID_USER_BUFFER",         STATUS_INVALID_USER_BUFFER },
     { "IO_REPARSE_DATA_INVALID",     STATUS_IO_REPARSE_DATA_INVALID },
     { "IO_REPARSE_TAG_INVALID",      STATUS_IO_REPARSE_TAG_INVALID },

@@ -90,7 +90,7 @@ static ULONG WINAPI x_game_ui_Release( IXGameUiImpl4 *iface )
 
 static HRESULT WINAPI x_game_ui_XGameUiShowMessageDialogAsync( IXGameUiImpl4 *iface, XAsyncBlock *async, const char *titleText, const char *contentText, const char *firstButtonText, const char *secondButtonText, const char *thirdButtonText, XGameUiMessageDialogButton defaultButton, XGameUiMessageDialogButton cancelButton )
 {
-    FIXME( "iface %p, async %p, title %s, content %s — auto-selecting default button %d\n", iface, async, debugstr_a( titleText ), debugstr_a( contentText ), defaultButton );
+    TRACE( "iface %p, async %p, title %s, content %s, defaultButton %d\n", iface, async, debugstr_a( titleText ), debugstr_a( contentText ), defaultButton );
     return xgameui_complete_inline( async, S_OK, &defaultButton, sizeof(defaultButton) );
 }
 
@@ -102,7 +102,7 @@ static HRESULT WINAPI x_game_ui_XGameUiShowMessageDialogResult( IXGameUiImpl4 *i
 
 static HRESULT WINAPI x_game_ui_XGameUiShowSendGameInviteAsync( IXGameUiImpl4 *iface, XAsyncBlock *async, XUserHandle requestingUser, const char *sessionConfigurationId, const char *sessionTemplateName, const char *sessionId, const char *invitationText, const char *customActivationContext )
 {
-    FIXME( "iface %p, async %p, sessionId %s — no Xbox Live, no-op\n", iface, async, debugstr_a( sessionId ) );
+    TRACE( "iface %p, async %p, sessionId %s\n", iface, async, debugstr_a( sessionId ) );
     return xgameui_complete_inline( async, S_OK, NULL, 0 );
 }
 
@@ -114,7 +114,7 @@ static HRESULT WINAPI x_game_ui_XGameUiShowSendGameInviteResult( IXGameUiImpl4 *
 
 static HRESULT WINAPI x_game_ui_XGameUiShowPlayerProfileCardAsync( IXGameUiImpl4 *iface, XAsyncBlock *async, XUserHandle requestingUser, UINT64 targetPlayer )
 {
-    FIXME( "iface %p, async %p — no-op\n", iface, async );
+    TRACE( "iface %p, async %p\n", iface, async );
     return xgameui_complete_inline( async, S_OK, NULL, 0 );
 }
 
@@ -126,7 +126,7 @@ static HRESULT WINAPI x_game_ui_XGameUiShowPlayerProfileCardResult( IXGameUiImpl
 
 static HRESULT WINAPI x_game_ui_XGameUiShowAchievementsAsync( IXGameUiImpl4 *iface, XAsyncBlock *async, XUserHandle requestingUser, UINT32 titleId )
 {
-    FIXME( "iface %p, async %p, titleId %u — no-op\n", iface, async, titleId );
+    TRACE( "iface %p, async %p, titleId %u\n", iface, async, titleId );
     return xgameui_complete_inline( async, S_OK, NULL, 0 );
 }
 
@@ -139,7 +139,7 @@ static HRESULT WINAPI x_game_ui_XGameUiShowAchievementsResult( IXGameUiImpl4 *if
 static HRESULT WINAPI x_game_ui_XGameUiShowPlayerPickerAsync( IXGameUiImpl4 *iface, XAsyncBlock *async, XUserHandle requestingUser, const char *promptText, UINT32 selectFromPlayersCount, const UINT64 *selectFromPlayers, UINT32 preSelectedPlayersCount, UINT64 *preSelectedPlayers, UINT32 minSelectionCount, UINT32 maxSelectionCount )
 {
     UINT32 zero = 0;
-    FIXME( "iface %p, async %p — no-op, 0 players selected\n", iface, async );
+    TRACE( "iface %p, async %p\n", iface, async );
     return xgameui_complete_inline( async, S_OK, &zero, sizeof(zero) );
 }
 
@@ -158,7 +158,7 @@ static HRESULT WINAPI x_game_ui_XGameUiShowPlayerPickerResult( IXGameUiImpl4 *if
 
 static HRESULT WINAPI x_game_ui_XGameUiShowErrorDialogAsync( IXGameUiImpl4 *iface, XAsyncBlock *async, HRESULT errorCode, const char *context )
 {
-    FIXME( "iface %p, async %p, errorCode %#lx — no-op\n", iface, async, errorCode );
+    TRACE( "iface %p, async %p, errorCode %#lx\n", iface, async, errorCode );
     return xgameui_complete_inline( async, S_OK, NULL, 0 );
 }
 
@@ -177,7 +177,7 @@ static HRESULT WINAPI x_game_ui_XGameUiSetNotificationPositionHint( IXGameUiImpl
 static HRESULT WINAPI x_game_ui_XGameUiShowTextEntryAsync( IXGameUiImpl4 *iface, XAsyncBlock *async, const char *titleText, const char *descriptionText, const char *defaultText, XGameUiTextEntryInputScope inputScope, UINT32 maxTextLength )
 {
     const char *text = defaultText ? defaultText : "";
-    FIXME( "iface %p, async %p, title %s — returning defaultText\n", iface, async, debugstr_a( titleText ) );
+    TRACE( "iface %p, async %p, title %s\n", iface, async, debugstr_a( titleText ) );
     return xgameui_complete_inline( async, S_OK, text, strlen(text) + 1 );
 }
 
@@ -265,7 +265,7 @@ static HRESULT WINAPI __PADDING_6__( IXGameUiImpl4 *iface )
 
 static HRESULT WINAPI x_game_ui_XGameUiShowMultiplayerActivityGameInviteAsync( IXGameUiImpl4 *iface, XAsyncBlock *async, XUserHandle requestingUser )
 {
-    FIXME( "iface %p, async %p — no Xbox Live, no-op\n", iface, async );
+    TRACE( "iface %p, async %p\n", iface, async );
     return xgameui_complete_inline( async, S_OK, NULL, 0 );
 }
 
@@ -333,7 +333,7 @@ static HRESULT WINAPI x_game_ui_XGameUiTextEntryUpdateVisibility( IXGameUiImpl4 
 
 static HRESULT WINAPI x_game_ui_XGameUiShowStateShareAsync( IXGameUiImpl4 *iface, XAsyncBlock *async, XUserHandle requestingUser, const char *linkToken )
 {
-    FIXME( "iface %p, async %p, linkToken %s — no-op\n", iface, async, debugstr_a( linkToken ) );
+    TRACE( "iface %p, async %p, linkToken %s\n", iface, async, debugstr_a( linkToken ) );
     return xgameui_complete_inline( async, S_OK, NULL, 0 );
 }
 

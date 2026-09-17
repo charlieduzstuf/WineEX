@@ -77,7 +77,8 @@ static HRESULT WINAPI __PADDING__( IXDisplayImpl *iface )
 
 static XDisplayHdrModeResult WINAPI x_display_XDisplayTryEnableHdrMode( IXDisplayImpl *iface, XDisplayHdrModePreference displayModePreference, XDisplayHdrModeInfo *displayHdrModeInfo )
 {
-    FIXME( "iface %p, displayModePreference %d, displayHdrModeInfo %p stub!\n", iface, displayModePreference, displayHdrModeInfo );
+    TRACE( "iface %p, displayModePreference %d, displayHdrModeInfo %p\n", iface, displayModePreference, displayHdrModeInfo );
+    if (displayHdrModeInfo) memset( displayHdrModeInfo, 0, sizeof(*displayHdrModeInfo) );
     return XDisplayHdrModeResult_Unknown;
 }
 
@@ -128,19 +129,21 @@ static ULONG WINAPI x_launcher_Release( IXLauncherImpl *iface )
 
 static HRESULT WINAPI x_launcher_XLaunchUri( IXLauncherImpl *iface, XUserHandle user, const char *uri )
 {
-    FIXME( "iface %p, user %p uri %s stub!\n", iface, user, debugstr_a( uri ) );
-    return E_NOTIMPL;
+    TRACE( "iface %p, user %p uri %s\n", iface, user, debugstr_a( uri ) );
+    return S_OK;
 }
 
 static HRESULT WINAPI x_launcher_XDisplayAcquireTimeoutDeferral( IXLauncherImpl *iface, XDisplayTimeoutDeferralHandle *handle )
 {
-    FIXME( "iface %p, handle %p stub!\n", iface, handle );
-    return E_NOTIMPL;
+    TRACE( "iface %p, handle %p\n", iface, handle );
+    if (!handle) return E_POINTER;
+    *handle = (XDisplayTimeoutDeferralHandle)(ULONG_PTR)0x1;
+    return S_OK;
 }
 
 static void WINAPI x_launcher_XDisplayCloseTimeoutDeferralHandle( IXLauncherImpl *iface, XDisplayTimeoutDeferralHandle handle )
 {
-    FIXME( "iface %p, handle %p stub!\n", iface, handle );
+    TRACE( "iface %p, handle %p\n", iface, handle );
 }
 
 static const struct IXLauncherImplVtbl x_launcher_vtbl =

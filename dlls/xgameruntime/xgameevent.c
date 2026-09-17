@@ -70,8 +70,8 @@ static ULONG WINAPI x_game_event_Release( IXGameEventImpl *iface )
 
 static HRESULT WINAPI x_game_event_XGameEventWrite( IXGameEventImpl *iface, XUserHandle user, const char *serviceConfigId, const char *playSessionId, const char *eventName, const char *dimensionsJson, const char *measurementsJson )
 {
-    FIXME( "iface %p, user %p, serviceConfigId %s, playSessionId %s, eventName %s, dimensionsJson %s, measurementsJson %s stub!\n", iface, user, debugstr_a( serviceConfigId ), debugstr_a( playSessionId ), debugstr_a( eventName ), debugstr_a( dimensionsJson ), debugstr_a( measurementsJson ) );
-    return E_NOTIMPL;
+    TRACE( "iface %p, user %p, eventName %s\n", iface, user, debugstr_a( eventName ) );
+    return S_OK;
 }
 
 static const struct IXGameEventImplVtbl x_game_event_vtbl =

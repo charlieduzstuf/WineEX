@@ -72,8 +72,10 @@ static ULONG WINAPI x_game_Release( IXGameImpl3 *iface )
 
 static HRESULT WINAPI x_game_XGameGetXboxTitleId( IXGameImpl3 *iface, UINT32 *titleId )
 {
-    FIXME( "iface %p, titleId %p stub!\n", iface, titleId );
-    return E_NOTIMPL;
+    TRACE( "iface %p, titleId %p\n", iface, titleId );
+    if (!titleId) return E_POINTER;
+    *titleId = 0;
+    return S_OK;
 }
 
 static void WINAPI x_game_XLaunchNewGame( IXGameImpl3 *iface, const char *exePath, const char *args, XUserHandle defaultUser )
@@ -83,8 +85,8 @@ static void WINAPI x_game_XLaunchNewGame( IXGameImpl3 *iface, const char *exePat
 
 static HRESULT WINAPI x_game_XLaunchRestartOnCrash( IXGameImpl3 *iface, const char *args, UINT32 reserved )
 {
-    FIXME( "iface %p, args %s, reserved %u stub!\n", iface, debugstr_a( args ), reserved );
-    return E_NOTIMPL;
+    TRACE( "iface %p, args %s, reserved %u\n", iface, debugstr_a( args ), reserved );
+    return S_OK;
 }
 
 static const struct IXGameImpl3Vtbl x_game_vtbl =

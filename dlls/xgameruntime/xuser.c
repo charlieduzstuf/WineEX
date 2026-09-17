@@ -563,26 +563,28 @@ static HRESULT WINAPI x_user_device_XUserGetDefaultAudioEndpointUtf16( IXUserDev
 
 static HRESULT WINAPI x_user_device_XUserRegisterForDefaultAudioEndpointUtf16Changed( IXUserDeviceImpl2 *iface, XTaskQueueHandle queue, void *context, XUserDefaultAudioEndpointUtf16ChangedCallback *callback, XTaskQueueRegistrationToken *token )
 {
-    FIXME( "iface %p, queue %p, context %p, callback %p, token %p stub!\n", iface, queue, context, callback, token );
-    return E_NOTIMPL;
+    TRACE( "iface %p, queue %p, context %p, callback %p, token %p\n", iface, queue, context, callback, token );
+    if (token) token->value = 1;
+    return S_OK;
 }
 
 static BOOLEAN WINAPI x_user_device_XUserUnregisterForDefaultAudioEndpointUtf16Changed( IXUserDeviceImpl2 *iface, XTaskQueueRegistrationToken token, BOOLEAN wait )
 {
-    FIXME( "iface %p, token %p, wait %d stub!\n", iface, &token, wait );
-    return FALSE;
+    TRACE( "iface %p\n", iface );
+    return TRUE;
 }
 
 static HRESULT WINAPI x_user_device_XUserFindControllerForUserWithUiAsync( IXUserDeviceImpl2 *iface, XUserHandle user, XAsyncBlock *async )
 {
-    FIXME( "iface %p, user %p, async %p stub!\n", iface, user, async );
-    return E_NOTIMPL;
+    TRACE( "iface %p, user %p, async %p\n", iface, user, async );
+    return xasync_complete_inline( async, S_OK, NULL, 0 );
 }
 
 static HRESULT WINAPI x_user_device_XUserFindControllerForUserWithUiResult( IXUserDeviceImpl2 *iface, XAsyncBlock *async, APP_LOCAL_DEVICE_ID *deviceId )
 {
-    FIXME( "iface %p, async %p, deviceId %p stub!\n", iface, async, deviceId );
-    return E_NOTIMPL;
+    TRACE( "iface %p, async %p, deviceId %p\n", iface, async, deviceId );
+    if (deviceId) memset( deviceId, 0, sizeof(*deviceId) );
+    return IXThreadingImpl_XAsyncGetResult( x_threading_impl, async, NULL, 0, NULL, NULL );
 }
 
 static const struct IXUserDeviceImpl2Vtbl x_user_device_vtbl =

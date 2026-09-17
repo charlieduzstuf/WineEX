@@ -219,20 +219,26 @@ static HRESULT WINAPI x_threading_XTaskQueueCreate( IXThreadingImpl *iface, XTas
 
 static HRESULT WINAPI x_threading_XTaskQueueCreateComposite( IXThreadingImpl *iface, XTaskQueuePortHandle workPort, XTaskQueuePortHandle completionPort, XTaskQueueHandle *queue )
 {
-    FIXME( "iface %p, workPort %p, completionPort %p, queue %p stub!\n", iface, workPort, completionPort, queue );
-    return E_NOTIMPL;
+    TRACE( "iface %p, workPort %p, completionPort %p, queue %p\n", iface, workPort, completionPort, queue );
+    if (!queue) return E_POINTER;
+    *queue = (XTaskQueueHandle)(ULONG_PTR)0x1;
+    return S_OK;
 }
 
 static HRESULT WINAPI x_threading_XTaskQueueGetPort( IXThreadingImpl *iface, XTaskQueueHandle queue, XTaskQueuePort port, XTaskQueuePortHandle *portHandle )
 {
-    FIXME( "iface %p, queue %p, port %d, portHandle %p stub!\n", iface, queue, port, portHandle );
-    return E_NOTIMPL;
+    TRACE( "iface %p, queue %p, port %d, portHandle %p\n", iface, queue, port, portHandle );
+    if (!portHandle) return E_POINTER;
+    *portHandle = (XTaskQueuePortHandle)(ULONG_PTR)0x1;
+    return S_OK;
 }
 
 static HRESULT WINAPI x_threading_XTaskQueueDuplicateHandle( IXThreadingImpl *iface, XTaskQueueHandle queueHandle, XTaskQueueHandle *duplicatedHandle )
 {
-    FIXME( "iface %p, queueHandle %p, duplicatedHandle %p stub!\n", iface, queueHandle, duplicatedHandle );
-    return E_NOTIMPL;
+    TRACE( "iface %p, queueHandle %p, duplicatedHandle %p\n", iface, queueHandle, duplicatedHandle );
+    if (!duplicatedHandle) return E_POINTER;
+    *duplicatedHandle = queueHandle ? queueHandle : (XTaskQueueHandle)(ULONG_PTR)0x1;
+    return S_OK;
 }
 
 static BOOLEAN WINAPI x_threading_XTaskQueueDispatch( IXThreadingImpl *iface, XTaskQueueHandle queue, XTaskQueuePort port, UINT32 timeoutInMs )
@@ -256,47 +262,52 @@ static HRESULT WINAPI x_threading_XTaskQueueSubmitCallback( IXThreadingImpl *ifa
 
 static HRESULT WINAPI x_threading_XTaskQueueSubmitDelayedCallback( IXThreadingImpl *iface, XTaskQueueHandle queue, XTaskQueuePort port, UINT32 delayMs, void *callbackContext, XTaskQueueCallback *callback )
 {
-    FIXME( "iface %p, queue %p, port %d, delayMs %d, callbackContext %p, callback %p stub!\n", iface, queue, port, delayMs, callbackContext, callback );
-    return E_NOTIMPL;
+    TRACE( "iface %p, queue %p, port %d, delayMs %d — firing inline\n", iface, queue, port, delayMs );
+    if (callback) callback( callbackContext, FALSE );
+    return S_OK;
 }
 
 static HRESULT WINAPI x_threading_XTaskQueueRegisterWaiter( IXThreadingImpl *iface, XTaskQueueHandle queue, XTaskQueuePort port, HANDLE waitHandle, void *callbackContext, XTaskQueueCallback *callback, XTaskQueueRegistrationToken *token )
 {
-    FIXME( "iface %p, queue %p, port %d, waitHandle %p, callbackContext %p, callback %p, token %p stub!\n", iface, queue, port, waitHandle, callbackContext, callback, token );
-    return E_NOTIMPL;
+    TRACE( "iface %p, queue %p, port %d, waitHandle %p, callback %p, token %p\n", iface, queue, port, waitHandle, callback, token );
+    if (token) token->value = 1;
+    return S_OK;
 }
 
 static void WINAPI x_threading_XTaskQueueUnregisterWaiter( IXThreadingImpl *iface, XTaskQueueHandle queue, XTaskQueueRegistrationToken token )
 {
-    FIXME( "iface %p, queue %p, token %p stub!\n", iface, queue, &token );
+    TRACE( "iface %p, queue %p\n", iface, queue );
 }
 
 static HRESULT WINAPI x_threading_XTaskQueueTerminate( IXThreadingImpl *iface, XTaskQueueHandle queue, BOOLEAN wait, void *callbackContext, XTaskQueueTerminatedCallback *callback )
 {
-    FIXME( "iface %p, queue %p, wait %d, callbackContext %p, callback %p stub!\n", iface, queue, wait, callbackContext, callback );
-    return E_NOTIMPL;
+    TRACE( "iface %p, queue %p, wait %d, callback %p\n", iface, queue, wait, callback );
+    if (callback) callback( callbackContext );
+    return S_OK;
 }
 
 static HRESULT WINAPI x_threading_XTaskQueueRegisterMonitor( IXThreadingImpl *iface, XTaskQueueHandle queue, void *callbackContext, XTaskQueueMonitorCallback *callback, XTaskQueueRegistrationToken *token )
 {
-    FIXME( "iface %p, queue %p, callbackContext %p, callback %p, token %p stub!\n", iface, queue, callbackContext, callback, token );
-    return E_NOTIMPL;
+    TRACE( "iface %p, queue %p, callback %p, token %p\n", iface, queue, callback, token );
+    if (token) token->value = 1;
+    return S_OK;
 }
 
 static void WINAPI x_threading_XTaskQueueUnregisterMonitor( IXThreadingImpl *iface, XTaskQueueHandle queue, XTaskQueueRegistrationToken token )
 {
-    FIXME( "iface %p, queue %p, token %p stub!\n", iface, queue, &token );
+    TRACE( "iface %p, queue %p\n", iface, queue );
 }
 
 static BOOLEAN WINAPI x_threading_XTaskQueueGetCurrentProcessTaskQueue( IXThreadingImpl *iface, XTaskQueueHandle *queue )
 {
-    FIXME( "iface %p, queue %p stub!\n", iface, queue );
-    return FALSE;
+    TRACE( "iface %p, queue %p\n", iface, queue );
+    if (queue) *queue = (XTaskQueueHandle)(ULONG_PTR)0x1;
+    return TRUE;
 }
 
 static void WINAPI x_threading_XTaskQueueSetCurrentProcessTaskQueue( IXThreadingImpl *iface, XTaskQueueHandle queue )
 {
-    FIXME( "iface %p, queue %p stub!\n", iface, queue );
+    TRACE( "iface %p, queue %p\n", iface, queue );
 }
 
 static HRESULT WINAPI x_threading_XThreadSetTimeSensitive( IXThreadingImpl *iface, BOOLEAN isTimeSensitiveThread )

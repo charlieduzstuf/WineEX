@@ -181,14 +181,15 @@ static BOOLEAN WINAPI x_store_XStoreProductsQueryHasMorePages( IXStoreImpl6 *ifa
 
 static HRESULT WINAPI x_store_XStoreProductsQueryNextPageAsync( IXStoreImpl6 *iface, const XStoreProductQueryHandle productQueryHandle, XAsyncBlock *async )
 {
-    FIXME( "iface %p, productQueryHandle %p, async %p stub!\n", iface, productQueryHandle, async );
-    return E_NOTIMPL;
+    XStoreProductQueryHandle sentinel = (XStoreProductQueryHandle)(ULONG_PTR)0x1;
+    TRACE( "iface %p, productQueryHandle %p, async %p — no more pages\n", iface, productQueryHandle, async );
+    return xstore_complete_inline( async, S_OK, &sentinel, sizeof(sentinel) );
 }
 
 static HRESULT WINAPI x_store_XStoreProductsQueryNextPageResult( IXStoreImpl6 *iface, XAsyncBlock *async, XStoreProductQueryHandle *productQueryHandle )
 {
-    FIXME( "iface %p, async %p, productQueryHandle %p stub!\n", iface, async, productQueryHandle );
-    return E_NOTIMPL;
+    TRACE( "iface %p, async %p, productQueryHandle %p\n", iface, async, productQueryHandle );
+    return IXThreadingImpl_XAsyncGetResult( x_threading_impl, async, NULL, sizeof(*productQueryHandle), productQueryHandle, NULL );
 }
 
 static void WINAPI x_store_XStoreCloseProductsQueryHandle( IXStoreImpl6 *iface, XStoreProductQueryHandle productQueryHandle )
@@ -496,8 +497,10 @@ static HRESULT WINAPI x_store_XStoreDownloadAndInstallPackagesResult( IXStoreImp
 
 static HRESULT WINAPI x_store_XStoreQueryPackageIdentifier( IXStoreImpl6 *iface, const char *storeId, SIZE_T size, char *packageIdentifier )
 {
-    FIXME( "iface %p, storeId %s, size %Iu stub!\n", iface, debugstr_a( storeId ), size );
-    return E_NOTIMPL;
+    TRACE( "iface %p, storeId %s, size %Iu\n", iface, debugstr_a( storeId ), size );
+    if (!storeId || !packageIdentifier || !size) return E_INVALIDARG;
+    lstrcpynA( packageIdentifier, storeId, (int)size );
+    return S_OK;
 }
 
 static HRESULT WINAPI x_store_XStoreRegisterGameLicenseChanged( IXStoreImpl6 *iface, XStoreContextHandle storeContextHandle, XTaskQueueHandle queue, void *context, XStoreGameLicenseChangedCallback *callback, XTaskQueueRegistrationToken *token )

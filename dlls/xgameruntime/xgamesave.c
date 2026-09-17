@@ -377,15 +377,91 @@ static HRESULT WINAPI x_game_save_XGameSaveReadBlobData( IXGameSaveImpl3 *iface,
     return S_OK;
 }
 
+/* Compound buffer layout: UINT32 count | UINT32 sizes[count] | char names[count][256] | UINT8 data... */
 static HRESULT WINAPI x_game_save_XGameSaveReadBlobDataAsync( IXGameSaveImpl3 *iface, XGameSaveContainerHandle container, const char **blobNames, UINT32 countOfBlobs, XAsyncBlock *async )
 {
-    FIXME( "iface %p, container %p stub — async blob read, completing with E_NOTIMPL\n", iface, container );
-    return xasync_complete_inline( async, E_NOTIMPL, NULL, 0 );
+    struct xasync_state *state;
+    SIZE_T total_data = 0, buf_size, names_size;
+    UINT8 *buf, *data_ptr;
+    UINT32 *count_ptr, *sizes_ptr, i;
+    char (*names_ptr)[256];
+
+    TRACE( "iface %p, container %p, count %u, async %p\n", iface, container, countOfBlobs, async );
+    if (!container || !blobNames) return E_INVALIDARG;
+
+    for (i = 0; i < countOfBlobs; i++) {
+        WCHAR path[MAX_PATH];
+        HANDLE h;
+        _snwprintf( path, MAX_PATH, L"%s%S", container->container_path, blobNames[i] );
+        h = CreateFileW( path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL );
+        if (h != INVALID_HANDLE_VALUE) { total_data += GetFileSize( h, NULL ); CloseHandle( h ); }
+    }
+
+    names_size = (SIZE_T)countOfBlobs * 256;
+    buf_size   = sizeof(UINT32) + (SIZE_T)countOfBlobs * sizeof(UINT32) + names_size + total_data;
+    buf = HeapAlloc( GetProcessHeap(), HEAP_ZERO_MEMORY, buf_size );
+    if (!buf) return E_OUTOFMEMORY;
+
+    count_ptr = (UINT32 *)buf;
+    *count_ptr = countOfBlobs;
+    sizes_ptr = count_ptr + 1;
+    names_ptr = (char (*)[256])(sizes_ptr + countOfBlobs);
+    data_ptr  = (UINT8 *)(names_ptr + countOfBlobs);
+
+    for (i = 0; i < countOfBlobs; i++) {
+        WCHAR path[MAX_PATH];
+        HANDLE h;
+        DWORD read;
+        lstrcpynA( names_ptr[i], blobNames[i], 256 );
+        _snwprintf( path, MAX_PATH, L"%s%S", container->container_path, blobNames[i] );
+        h = CreateFileW( path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL );
+        if (h == INVALID_HANDLE_VALUE) { sizes_ptr[i] = 0; continue; }
+        sizes_ptr[i] = GetFileSize( h, NULL );
+        ReadFile( h, data_ptr, sizes_ptr[i], &read, NULL );
+        data_ptr += sizes_ptr[i];
+        CloseHandle( h );
+    }
+
+    state = HeapAlloc( GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(*state) );
+    if (!state) { HeapFree( GetProcessHeap(), 0, buf ); return E_OUTOFMEMORY; }
+    state->result      = S_OK;
+    state->result_buf  = buf;
+    state->result_size = buf_size;
+    state->completed   = TRUE;
+    async->internal[0] = state;
+    if (async->callback) async->callback( async );
+    return S_OK;
 }
 
 static HRESULT WINAPI x_game_save_XGameSaveReadBlobDataResult( IXGameSaveImpl3 *iface, XAsyncBlock *async, SIZE_T blobsSize, XGameSaveBlob *blobData, UINT32 *countOfBlobs )
 {
-    return IXThreadingImpl_XAsyncGetStatus( x_threading_impl, async, FALSE );
+    struct xasync_state *state = (struct xasync_state *)async->internal[0];
+    UINT32 *count_ptr, *sizes_ptr, i;
+    char (*names_ptr)[256];
+    UINT8 *src_data, *dst_base;
+    SIZE_T offset = 0;
+
+    TRACE( "iface %p, async %p, blobsSize %Iu, blobData %p\n", iface, async, blobsSize, blobData );
+    if (!state) return E_FAIL;
+    if (FAILED(state->result)) return state->result;
+    if (!blobData || !countOfBlobs) return E_INVALIDARG;
+
+    count_ptr    = (UINT32 *)state->result_buf;
+    *countOfBlobs = *count_ptr;
+    sizes_ptr    = count_ptr + 1;
+    names_ptr    = (char (*)[256])(sizes_ptr + *count_ptr);
+    src_data     = (UINT8 *)(names_ptr + *count_ptr);
+    dst_base     = (UINT8 *)blobData + sizeof(*blobData) * (*countOfBlobs);
+
+    for (i = 0; i < *count_ptr; i++) {
+        blobData[i].info.name = names_ptr[i];
+        blobData[i].info.size = sizes_ptr[i];
+        blobData[i].data      = dst_base + offset;
+        if (sizes_ptr[i] && dst_base + offset + sizes_ptr[i] <= (UINT8 *)blobData + blobsSize)
+            memcpy( dst_base + offset, src_data + offset, sizes_ptr[i] );
+        offset += sizes_ptr[i];
+    }
+    return S_OK;
 }
 
 static HRESULT WINAPI x_game_save_XGameSaveCreateUpdate( IXGameSaveImpl3 *iface, XGameSaveContainerHandle container, const char *containerDisplayName, XGameSaveUpdateHandle *updateContext )

@@ -111,8 +111,10 @@ static HRESULT WINAPI x_accessibility_XSpeechSynthesizerEnumerateInstalledVoices
 
 static HRESULT WINAPI x_accessibility_XSpeechSynthesizerCreate( IXAccessibilityImpl2 *iface, XSpeechSynthesizerHandle *speechSynthesizer )
 {
-    FIXME( "iface %p, speechSynthesizer %p stub!\n", iface, speechSynthesizer );
-    return E_NOTIMPL;
+    TRACE( "iface %p, speechSynthesizer %p\n", iface, speechSynthesizer );
+    if (!speechSynthesizer) return E_INVALIDARG;
+    *speechSynthesizer = (XSpeechSynthesizerHandle)(ULONG_PTR)0x1;
+    return S_OK;
 }
 
 static HRESULT WINAPI x_accessibility_XSpeechSynthesizerCloseHandle( IXAccessibilityImpl2 *iface, XSpeechSynthesizerHandle speechSynthesizer )

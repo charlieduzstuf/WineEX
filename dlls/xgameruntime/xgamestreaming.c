@@ -105,7 +105,7 @@ static HRESULT WINAPI x_game_streaming_XGameStreamingGetStreamPhysicalDimensions
     TRACE( "iface %p, client %llu, horizontalMm %p, verticalMm %p\n", iface, client, horizontalMm, verticalMm );
     if (horizontalMm) *horizontalMm = 0;
     if (verticalMm)   *verticalMm   = 0;
-    return E_NOTIMPL;
+    return S_OK;
 }
 
 static UINT32 WINAPI x_game_streaming_XGameStreamingGetClientCount( IXGameStreamingImpl3 *iface )
@@ -146,7 +146,7 @@ static HRESULT WINAPI x_game_streaming_XGameStreamingGetStreamAddedLatency( IXGa
     if (averageInputLatencyUs)  *averageInputLatencyUs  = 0;
     if (averageOutputLatencyUs) *averageOutputLatencyUs = 0;
     if (standardDeviationUs)    *standardDeviationUs    = 0;
-    return E_NOTIMPL;
+    return S_OK;
 }
 
 static SIZE_T WINAPI x_game_streaming_XGameStreamingGetServerLocationNameSize( IXGameStreamingImpl3 *iface )

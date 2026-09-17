@@ -242,7 +242,7 @@ static HRESULT WINAPI x_game_ui_XGameUiShowWebAuthenticationResultSize( IXGameUi
 static HRESULT WINAPI x_game_ui_XGameUiShowWebAuthenticationResult( IXGameUiImpl4 *iface, XAsyncBlock *async, SIZE_T bufferSize, void *buffer, XGameUiWebAuthenticationResultData **ptrToBuffer, SIZE_T *bufferUsed )
 {
     TRACE( "iface %p, async %p\n", iface, async );
-    return E_NOTIMPL;
+    return IXThreadingImpl_XAsyncGetStatus( x_threading_impl, async, FALSE );
 }
 
 static HRESULT WINAPI x_game_ui_XGameUiShowWebAuthenticationWithOptionsAsync( IXGameUiImpl4 *iface, XAsyncBlock *async, XUserHandle requestingUser, const char *requestUri, const char *completionUri, XGameUiWebAuthenticationOptions options )
@@ -289,38 +289,46 @@ static HRESULT WINAPI __PADDING_8__( IXGameUiImpl4 *iface )
 
 static HRESULT WINAPI x_game_ui_XGameUiTextEntryOpen( IXGameUiImpl4 *iface, const XGameUiTextEntryOptions *options, UINT32 maxLength, const char *initialText, UINT32 initialCursorIndex, XGameUiTextEntryHandle *handle )
 {
-    FIXME( "iface %p, options %p, maxLength %u, initialText %s, initialCursorIndex %u, handle %p stub!\n", iface, options, maxLength, debugstr_a( initialText ), initialCursorIndex, handle );
-    return E_NOTIMPL;
+    TRACE( "iface %p, options %p, maxLength %u, initialText %s, initialCursorIndex %u, handle %p\n", iface, options, maxLength, debugstr_a( initialText ), initialCursorIndex, handle );
+    if (!handle) return E_INVALIDARG;
+    *handle = (XGameUiTextEntryHandle)(ULONG_PTR)0x1;
+    return S_OK;
 }
 
 static HRESULT WINAPI x_game_ui_XGameUiTextEntryClose( IXGameUiImpl4 *iface, XGameUiTextEntryHandle handle )
 {
-    FIXME( "iface %p, handle %p stub!\n", iface, handle );
-    return E_NOTIMPL;
+    TRACE( "iface %p, handle %p\n", iface, handle );
+    return S_OK;
 }
 
 static HRESULT WINAPI x_game_ui_XGameUiTextEntryGetState( IXGameUiImpl4 *iface, XGameUiTextEntryHandle handle, XGameUiTextEntryChangeTypeFlags *changeType, UINT32 *cursorIndex, UINT32 *imeClauseStartIndex, UINT32 *imeClauseEndIndex, UINT32 bufferSize, char *buffer )
 {
-    FIXME( "iface %p, handle %p, changeType %p, cursorIndex %p, imeClauseStartIndex %p, imeClauseEndIndex %p, bufferSize %u, buffer %p stub!\n", iface, handle, changeType, cursorIndex, imeClauseStartIndex, imeClauseEndIndex, bufferSize, buffer );
-    return E_NOTIMPL;
+    TRACE( "iface %p, handle %p\n", iface, handle );
+    if (changeType)        *changeType        = XGameUiTextEntryChangeTypeFlags_None;
+    if (cursorIndex)       *cursorIndex       = 0;
+    if (imeClauseStartIndex) *imeClauseStartIndex = 0;
+    if (imeClauseEndIndex)   *imeClauseEndIndex   = 0;
+    if (buffer && bufferSize) buffer[0] = '\0';
+    return S_OK;
 }
 
 static HRESULT WINAPI x_game_ui_XGameUiTextEntryGetExtents( IXGameUiImpl4 *iface, XGameUiTextEntryHandle handle, XGameUiTextEntryExtents *extents )
 {
-    FIXME( "iface %p, handle %p, extents %p stub!\n", iface, handle, extents );
-    return E_NOTIMPL;
+    TRACE( "iface %p, handle %p, extents %p\n", iface, handle, extents );
+    if (extents) memset( extents, 0, sizeof(*extents) );
+    return S_OK;
 }
 
 static HRESULT WINAPI x_game_ui_XGameUiTextEntryUpdatePositionHint( IXGameUiImpl4 *iface, XGameUiTextEntryHandle handle, XGameUiTextEntryPositionHint positionHint )
 {
-    FIXME( "iface %p, handle %p, positionHint %d stub!\n", iface, handle, positionHint );
-    return E_NOTIMPL;
+    TRACE( "iface %p, handle %p, positionHint %d\n", iface, handle, positionHint );
+    return S_OK;
 }
 
 static HRESULT WINAPI x_game_ui_XGameUiTextEntryUpdateVisibility( IXGameUiImpl4 *iface, XGameUiTextEntryHandle handle, XGameUiTextEntryVisibilityFlags visibilityFlags )
 {
-    FIXME( "iface %p, handle %p, visibilityFlags %d stub!\n", iface, handle, visibilityFlags );
-    return E_NOTIMPL;
+    TRACE( "iface %p, handle %p, visibilityFlags %d\n", iface, handle, visibilityFlags );
+    return S_OK;
 }
 
 static HRESULT WINAPI x_game_ui_XGameUiShowStateShareAsync( IXGameUiImpl4 *iface, XAsyncBlock *async, XUserHandle requestingUser, const char *linkToken )

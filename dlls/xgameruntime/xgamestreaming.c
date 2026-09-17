@@ -158,7 +158,8 @@ static SIZE_T WINAPI x_game_streaming_XGameStreamingGetServerLocationNameSize( I
 static HRESULT WINAPI x_game_streaming_XGameStreamingGetServerLocationName( IXGameStreamingImpl3 *iface, SIZE_T serverLocationNameSize, char *serverLocationName )
 {
     TRACE( "iface %p, serverLocationNameSize %Iu, serverLocationName %p\n", iface, serverLocationNameSize, serverLocationName );
-    return E_NOTIMPL;
+    if (serverLocationName && serverLocationNameSize > 0) serverLocationName[0] = '\0';
+    return S_OK;
 }
 
 static void WINAPI x_game_streaming_XGameStreamingHideTouchControls( IXGameStreamingImpl3 *iface )
@@ -241,26 +242,30 @@ static HRESULT WINAPI x_game_streaming_XGameStreamingGetTouchBundleVersion( IXGa
 {
     TRACE( "iface %p, client %llu, version %p, versionNameSize %Iu, versionName %p\n", iface, client, version, versionNameSize, versionName );
     if (version) memset( version, 0, sizeof(*version) );
-    return E_NOTIMPL;
+    if (versionName && versionNameSize > 0) versionName[0] = '\0';
+    return S_OK;
 }
 
 static HRESULT WINAPI x_game_streaming_XGameStreamingGetClientIPAddress( IXGameStreamingImpl3 *iface, XGameStreamingClientId client, SIZE_T ipAddressSize, char *ipAddress )
 {
     TRACE( "iface %p, client %llu, ipAddressSize %Iu, ipAddress %p\n", iface, client, ipAddressSize, ipAddress );
-    return E_NOTIMPL;
+    if (ipAddress && ipAddressSize > 0) ipAddress[0] = '\0';
+    return S_OK;
 }
 
 static HRESULT WINAPI x_game_streaming_XGameStreamingGetSessionId( IXGameStreamingImpl3 *iface, XGameStreamingClientId client, SIZE_T sessionIdSize, char *sessionId, SIZE_T *sessionIdUsed )
 {
     TRACE( "iface %p, client %llu, sessionIdSize %Iu, sessionId %p, sessionIdUsed %p\n", iface, client, sessionIdSize, sessionId, sessionIdUsed );
-    return E_NOTIMPL;
+    if (sessionId && sessionIdSize > 0) sessionId[0] = '\0';
+    if (sessionIdUsed) *sessionIdUsed = sessionIdSize ? 1 : 0;
+    return S_OK;
 }
 
 static HRESULT WINAPI x_game_streaming_XGameStreamingGetDisplayDetails( IXGameStreamingImpl3 *iface, XGameStreamingClientId client, UINT32 maxSupportedPixels, float widestSupportedAspectRatio, float tallestSupportedAspectRatio, XGameStreamingDisplayDetails *displayDetails )
 {
     TRACE( "iface %p, client %llu, maxSupportedPixels %u, displayDetails %p\n", iface, client, maxSupportedPixels, displayDetails );
     if (displayDetails) memset( displayDetails, 0, sizeof(*displayDetails) );
-    return E_NOTIMPL;
+    return S_OK;
 }
 
 static HRESULT WINAPI x_game_streaming_XGameStreamingSetResolution( IXGameStreamingImpl3 *iface, UINT32 width, UINT32 height )

@@ -139,6 +139,7 @@ extern IActivationFactory *xbox_controller_factory;
 
 /* user.c */
 extern IActivationFactory *xbox_user_factory;
+HRESULT xbox_user_create_fake( void **out ); /* returns an IUser* with ref=1 */
 
 /* storage.c */
 extern IActivationFactory *xbox_storage_factory;

@@ -80,10 +80,8 @@ static HRESULT STDMETHODCALLTYPE cav_get_TitleName(ICoreApplicationView *iface, 
 
 static HRESULT STDMETHODCALLTYPE cav_get_User(ICoreApplicationView *iface, void **value)
 {
-    /* Delegate to the User factory's static user */
-    FIXME("(%p, %p): stub — no user\n", iface, value);
-    *value = NULL;
-    return E_NOTIMPL;
+    TRACE("(%p, %p)\n", iface, value);
+    return xbox_user_create_fake( value );
 }
 
 static HRESULT STDMETHODCALLTYPE cav_get_IsMaster(ICoreApplicationView *iface, boolean *value)

@@ -148,6 +148,11 @@ static HRESULT user_create( IUser **out )
     return S_OK;
 }
 
+HRESULT xbox_user_create_fake( void **out )
+{
+    return user_create( (IUser **)out );
+}
+
 /* ======================================================================
  * IUserStatics — static factory for User
  * ====================================================================== */

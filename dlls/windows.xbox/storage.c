@@ -10,7 +10,209 @@
 
 #include "private.h"
 #include "asyncinfo.h"
+#include "shellapi.h"
 #include "shlobj.h"
+
+/* ======================================================================
+ * Local IVectorView<HSTRING> / IIterable<HSTRING> / IIterator<HSTRING>
+ * Used to return blob-name lists from GetNamesAsync.
+ * ====================================================================== */
+
+struct hstr_iter;
+struct hstr_view;
+
+struct hstr_iter {
+    IIterator_HSTRING IIterator_HSTRING_iface;
+    LONG ref;
+    IVectorView_HSTRING *view;
+    UINT32 index;
+    UINT32 size;
+};
+
+static inline struct hstr_iter *impl_from_hstr_iter(IIterator_HSTRING *iface)
+{ return CONTAINING_RECORD(iface, struct hstr_iter, IIterator_HSTRING_iface); }
+
+static HRESULT STDMETHODCALLTYPE hstr_iter_QI(IIterator_HSTRING *iface, REFIID iid, void **out)
+{
+    struct hstr_iter *impl = impl_from_hstr_iter(iface);
+    if (IsEqualGUID(iid, &IID_IUnknown) || IsEqualGUID(iid, &IID_IInspectable) ||
+        IsEqualGUID(iid, &IID_IIterator_HSTRING))
+    { IInspectable_AddRef((*out = &impl->IIterator_HSTRING_iface)); return S_OK; }
+    *out = NULL; return E_NOINTERFACE;
+}
+static ULONG STDMETHODCALLTYPE hstr_iter_AddRef(IIterator_HSTRING *iface)
+{ return InterlockedIncrement(&impl_from_hstr_iter(iface)->ref); }
+static ULONG STDMETHODCALLTYPE hstr_iter_Release(IIterator_HSTRING *iface)
+{
+    struct hstr_iter *impl = impl_from_hstr_iter(iface);
+    ULONG ref = InterlockedDecrement(&impl->ref);
+    if (!ref) { IVectorView_HSTRING_Release(impl->view); HeapFree(GetProcessHeap(), 0, impl); }
+    return ref;
+}
+static HRESULT STDMETHODCALLTYPE hstr_iter_GetIids(IIterator_HSTRING *iface, ULONG *n, IID **ids)
+{ *n = 0; *ids = NULL; return S_OK; }
+static HRESULT STDMETHODCALLTYPE hstr_iter_GetRTCN(IIterator_HSTRING *iface, HSTRING *cn)
+{ *cn = NULL; return S_OK; }
+static HRESULT STDMETHODCALLTYPE hstr_iter_GetTL(IIterator_HSTRING *iface, TrustLevel *tl)
+{ *tl = BaseTrust; return S_OK; }
+static HRESULT STDMETHODCALLTYPE hstr_iter_get_Current(IIterator_HSTRING *iface, HSTRING *val)
+{ return IVectorView_HSTRING_GetAt(impl_from_hstr_iter(iface)->view, impl_from_hstr_iter(iface)->index, val); }
+static HRESULT STDMETHODCALLTYPE hstr_iter_get_HasCurrent(IIterator_HSTRING *iface, boolean *val)
+{ *val = impl_from_hstr_iter(iface)->index < impl_from_hstr_iter(iface)->size; return S_OK; }
+static HRESULT STDMETHODCALLTYPE hstr_iter_MoveNext(IIterator_HSTRING *iface, boolean *val)
+{
+    struct hstr_iter *impl = impl_from_hstr_iter(iface);
+    if (impl->index < impl->size) impl->index++;
+    return hstr_iter_get_HasCurrent(iface, val);
+}
+static HRESULT STDMETHODCALLTYPE hstr_iter_GetMany(IIterator_HSTRING *iface, UINT32 n,
+    HSTRING *items, UINT *count)
+{ return IVectorView_HSTRING_GetMany(impl_from_hstr_iter(iface)->view,
+      impl_from_hstr_iter(iface)->index, n, items, count); }
+
+static const IIterator_HSTRINGVtbl hstr_iter_vtbl = {
+    hstr_iter_QI, hstr_iter_AddRef, hstr_iter_Release,
+    hstr_iter_GetIids, hstr_iter_GetRTCN, hstr_iter_GetTL,
+    hstr_iter_get_Current, hstr_iter_get_HasCurrent, hstr_iter_MoveNext, hstr_iter_GetMany,
+};
+
+struct hstr_view {
+    IVectorView_HSTRING IVectorView_HSTRING_iface;
+    IIterable_HSTRING   IIterable_HSTRING_iface;
+    LONG ref;
+    UINT32 count;
+    HSTRING names[1];
+};
+
+static inline struct hstr_view *impl_from_hstr_view(IVectorView_HSTRING *iface)
+{ return CONTAINING_RECORD(iface, struct hstr_view, IVectorView_HSTRING_iface); }
+static inline struct hstr_view *impl_from_hstr_iterable(IIterable_HSTRING *iface)
+{ return CONTAINING_RECORD(iface, struct hstr_view, IIterable_HSTRING_iface); }
+
+static void hstr_view_destroy(struct hstr_view *impl)
+{
+    UINT32 i;
+    for (i = 0; i < impl->count; i++) WindowsDeleteString(impl->names[i]);
+    HeapFree(GetProcessHeap(), 0, impl);
+}
+
+static HRESULT STDMETHODCALLTYPE hstr_view_QI(IVectorView_HSTRING *iface, REFIID iid, void **out)
+{
+    struct hstr_view *impl = impl_from_hstr_view(iface);
+    if (IsEqualGUID(iid, &IID_IUnknown) || IsEqualGUID(iid, &IID_IInspectable) ||
+        IsEqualGUID(iid, &IID_IVectorView_HSTRING))
+    { IInspectable_AddRef((*out = &impl->IVectorView_HSTRING_iface)); return S_OK; }
+    if (IsEqualGUID(iid, &IID_IIterable_HSTRING))
+    { IInspectable_AddRef((*out = &impl->IIterable_HSTRING_iface)); return S_OK; }
+    *out = NULL; return E_NOINTERFACE;
+}
+static ULONG STDMETHODCALLTYPE hstr_view_AddRef(IVectorView_HSTRING *iface)
+{ return InterlockedIncrement(&impl_from_hstr_view(iface)->ref); }
+static ULONG STDMETHODCALLTYPE hstr_view_Release(IVectorView_HSTRING *iface)
+{
+    struct hstr_view *impl = impl_from_hstr_view(iface);
+    ULONG ref = InterlockedDecrement(&impl->ref);
+    if (!ref) hstr_view_destroy(impl);
+    return ref;
+}
+static HRESULT STDMETHODCALLTYPE hstr_view_GetIids(IVectorView_HSTRING *iface, ULONG *n, IID **ids)
+{ *n = 0; *ids = NULL; return S_OK; }
+static HRESULT STDMETHODCALLTYPE hstr_view_GetRTCN(IVectorView_HSTRING *iface, HSTRING *cn)
+{ *cn = NULL; return S_OK; }
+static HRESULT STDMETHODCALLTYPE hstr_view_GetTL(IVectorView_HSTRING *iface, TrustLevel *tl)
+{ *tl = BaseTrust; return S_OK; }
+static HRESULT STDMETHODCALLTYPE hstr_view_GetAt(IVectorView_HSTRING *iface, UINT32 idx, HSTRING *val)
+{
+    struct hstr_view *impl = impl_from_hstr_view(iface);
+    if (idx >= impl->count) { *val = NULL; return E_BOUNDS; }
+    return WindowsDuplicateString(impl->names[idx], val);
+}
+static HRESULT STDMETHODCALLTYPE hstr_view_get_Size(IVectorView_HSTRING *iface, UINT32 *val)
+{ *val = impl_from_hstr_view(iface)->count; return S_OK; }
+static HRESULT STDMETHODCALLTYPE hstr_view_IndexOf(IVectorView_HSTRING *iface, HSTRING elem,
+    UINT32 *idx, BOOLEAN *found)
+{
+    struct hstr_view *impl = impl_from_hstr_view(iface);
+    UINT32 i;
+    for (i = 0; i < impl->count; i++)
+        if (WindowsIsStringEmpty(elem) ? WindowsIsStringEmpty(impl->names[i])
+            : CompareStringOrdinal(WindowsGetStringRawBuffer(impl->names[i], NULL), -1,
+                                   WindowsGetStringRawBuffer(elem, NULL), -1, FALSE) == CSTR_EQUAL)
+            break;
+    if ((*found = i < impl->count)) *idx = i; else *idx = 0;
+    return S_OK;
+}
+static HRESULT STDMETHODCALLTYPE hstr_view_GetMany(IVectorView_HSTRING *iface, UINT32 start,
+    UINT32 n, HSTRING *items, UINT *count)
+{
+    struct hstr_view *impl = impl_from_hstr_view(iface);
+    UINT32 i; HRESULT hr;
+    if (start >= impl->count) { *count = 0; return E_BOUNDS; }
+    for (i = start; i < impl->count && i - start < n; i++)
+        if (FAILED(hr = WindowsDuplicateString(impl->names[i], &items[i - start])))
+        { *count = 0; return hr; }
+    *count = i - start;
+    return S_OK;
+}
+
+static const IVectorView_HSTRINGVtbl hstr_view_vtbl = {
+    hstr_view_QI, hstr_view_AddRef, hstr_view_Release,
+    hstr_view_GetIids, hstr_view_GetRTCN, hstr_view_GetTL,
+    hstr_view_GetAt, hstr_view_get_Size, hstr_view_IndexOf, hstr_view_GetMany,
+};
+
+/* IIterable<HSTRING> face of hstr_view */
+static HRESULT STDMETHODCALLTYPE hstr_itbl_QI(IIterable_HSTRING *iface, REFIID iid, void **out)
+{ return hstr_view_QI(&impl_from_hstr_iterable(iface)->IVectorView_HSTRING_iface, iid, out); }
+static ULONG STDMETHODCALLTYPE hstr_itbl_AddRef(IIterable_HSTRING *iface)
+{ return hstr_view_AddRef(&impl_from_hstr_iterable(iface)->IVectorView_HSTRING_iface); }
+static ULONG STDMETHODCALLTYPE hstr_itbl_Release(IIterable_HSTRING *iface)
+{ return hstr_view_Release(&impl_from_hstr_iterable(iface)->IVectorView_HSTRING_iface); }
+static HRESULT STDMETHODCALLTYPE hstr_itbl_GetIids(IIterable_HSTRING *iface, ULONG *n, IID **ids)
+{ *n = 0; *ids = NULL; return S_OK; }
+static HRESULT STDMETHODCALLTYPE hstr_itbl_GetRTCN(IIterable_HSTRING *iface, HSTRING *cn)
+{ *cn = NULL; return S_OK; }
+static HRESULT STDMETHODCALLTYPE hstr_itbl_GetTL(IIterable_HSTRING *iface, TrustLevel *tl)
+{ *tl = BaseTrust; return S_OK; }
+static HRESULT STDMETHODCALLTYPE hstr_itbl_First(IIterable_HSTRING *iface, IIterator_HSTRING **out)
+{
+    struct hstr_view *vimpl = impl_from_hstr_iterable(iface);
+    struct hstr_iter *iter = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(*iter));
+    if (!iter) return E_OUTOFMEMORY;
+    iter->IIterator_HSTRING_iface.lpVtbl = &hstr_iter_vtbl;
+    iter->ref = 1;
+    IVectorView_HSTRING_AddRef((iter->view = &vimpl->IVectorView_HSTRING_iface));
+    iter->size = vimpl->count;
+    *out = &iter->IIterator_HSTRING_iface;
+    return S_OK;
+}
+static const IIterable_HSTRINGVtbl hstr_itbl_vtbl = {
+    hstr_itbl_QI, hstr_itbl_AddRef, hstr_itbl_Release,
+    hstr_itbl_GetIids, hstr_itbl_GetRTCN, hstr_itbl_GetTL,
+    hstr_itbl_First,
+};
+
+static HRESULT hstr_view_create(const WCHAR **names_w, UINT32 count, IVectorView_HSTRING **out)
+{
+    struct hstr_view *impl;
+    UINT32 i;
+    HRESULT hr;
+
+    impl = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
+        offsetof(struct hstr_view, names[count ? count : 1]));
+    if (!impl) return E_OUTOFMEMORY;
+    impl->IVectorView_HSTRING_iface.lpVtbl = &hstr_view_vtbl;
+    impl->IIterable_HSTRING_iface.lpVtbl  = &hstr_itbl_vtbl;
+    impl->ref   = 1;
+    impl->count = count;
+    for (i = 0; i < count; i++)
+    {
+        if (FAILED(hr = WindowsCreateString(names_w[i], lstrlenW(names_w[i]), &impl->names[i])))
+        { impl->count = i; hstr_view_destroy(impl); return hr; }
+    }
+    *out = &impl->IVectorView_HSTRING_iface;
+    return S_OK;
+}
 
 WINE_DEFAULT_DEBUG_CHANNEL(xbox);
 
@@ -245,9 +447,47 @@ static HRESULT STDMETHODCALLTYPE container_GetTL(IConnectedStorageContainer *ifa
 static HRESULT STDMETHODCALLTYPE container_SubmitUpdatesAsync(IConnectedStorageContainer *iface,
     void *updates, void *deletes, void **out)
 {
+    struct container_obj *impl = impl_from_container(iface);
     async_op *op;
     HRESULT hr;
-    FIXME("(%p, %p, %p, %p): stub — no real I/O\n", iface, updates, deletes, out);
+
+    TRACE("(%p, updates %p, deletes %p, %p)\n", iface, updates, deletes, out);
+
+    /* Delete blobs named in the deletes IVectorView<HSTRING> */
+    if (deletes)
+    {
+        IIterable_HSTRING *iterable = NULL;
+        if (SUCCEEDED(IUnknown_QueryInterface((IUnknown *)deletes, &IID_IIterable_HSTRING,
+            (void **)&iterable)))
+        {
+            IIterator_HSTRING *iter = NULL;
+            boolean has;
+            if (SUCCEEDED(IIterable_HSTRING_First(iterable, &iter)))
+            {
+                IIterator_HSTRING_get_HasCurrent(iter, &has);
+                while (has)
+                {
+                    HSTRING name = NULL;
+                    WCHAR path[MAX_PATH];
+                    IIterator_HSTRING_get_Current(iter, &name);
+                    lstrcpyW(path, impl->path);
+                    lstrcatW(path, L"\\");
+                    lstrcatW(path, WindowsGetStringRawBuffer(name, NULL));
+                    DeleteFileW(path);
+                    WindowsDeleteString(name);
+                    IIterator_HSTRING_MoveNext(iter, &has);
+                }
+                IIterator_HSTRING_Release(iter);
+            }
+            IIterable_HSTRING_Release(iterable);
+        }
+    }
+
+    /* updates is IMapView<HSTRING, IBuffer> — iterating requires parameterised IID;
+     * log FIXME only when non-NULL so games that pass NULL updates don't spam. */
+    if (updates)
+        FIXME("(%p): updates IMapView<HSTRING,IBuffer> iteration not yet implemented\n", iface);
+
     hr = async_op_create(NULL, &op);
     if (SUCCEEDED(hr)) *out = op;
     return hr;
@@ -258,7 +498,8 @@ static HRESULT STDMETHODCALLTYPE container_ReadAsync(IConnectedStorageContainer 
 {
     async_op *op;
     HRESULT hr;
-    FIXME("(%p, %p, %p): stub — no real I/O\n", iface, reads, out);
+    /* reads is IMapView<HSTRING,IBuffer> — filling IBuffer requires parameterised IID */
+    FIXME("(%p, %p, %p): reads IMapView<HSTRING,IBuffer> not yet implemented\n", iface, reads, out);
     hr = async_op_create(NULL, &op);
     if (SUCCEEDED(hr)) *out = op;
     return hr;
@@ -266,20 +507,99 @@ static HRESULT STDMETHODCALLTYPE container_ReadAsync(IConnectedStorageContainer 
 
 static HRESULT STDMETHODCALLTYPE container_GetNamesAsync(IConnectedStorageContainer *iface, void **out)
 {
+    struct container_obj *impl = impl_from_container(iface);
+    WIN32_FIND_DATAW data;
+    HANDLE hfind;
+    WCHAR pattern[MAX_PATH];
+    const WCHAR **names_buf = NULL;
+    UINT32 count = 0, cap = 0;
     async_op *op;
+    IVectorView_HSTRING *view;
     HRESULT hr;
-    FIXME("(%p, %p): stub\n", iface, out);
-    hr = async_op_create(NULL, &op);
+
+    TRACE("(%p, %p)\n", iface, out);
+
+    lstrcpyW(pattern, impl->path);
+    lstrcatW(pattern, L"\\*");
+
+    hfind = FindFirstFileW(pattern, &data);
+    if (hfind != INVALID_HANDLE_VALUE)
+    {
+        do {
+            WCHAR *copy;
+            if (!lstrcmpW(data.cFileName, L".") || !lstrcmpW(data.cFileName, L"..")) continue;
+            if (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
+            if (count >= cap)
+            {
+                UINT32 newcap = cap ? cap * 2 : 16;
+                const WCHAR **tmp = HeapReAlloc(GetProcessHeap(), 0, names_buf,
+                    newcap * sizeof(*names_buf));
+                if (!tmp) { hr = E_OUTOFMEMORY; FindClose(hfind); goto cleanup; }
+                names_buf = tmp; cap = newcap;
+            }
+            copy = HeapAlloc(GetProcessHeap(), 0, (lstrlenW(data.cFileName) + 1) * sizeof(WCHAR));
+            if (!copy) { hr = E_OUTOFMEMORY; FindClose(hfind); goto cleanup; }
+            lstrcpyW(copy, data.cFileName);
+            names_buf[count++] = copy;
+        } while (FindNextFileW(hfind, &data));
+        FindClose(hfind);
+    }
+
+    hr = hstr_view_create(names_buf, count, &view);
+    /* free the per-entry copies */
+    { UINT32 i; for (i = 0; i < count; i++) HeapFree(GetProcessHeap(), 0, (void *)names_buf[i]); }
+    HeapFree(GetProcessHeap(), 0, names_buf);
+    if (FAILED(hr)) return hr;
+
+    hr = async_op_create((IInspectable *)view, &op);
+    IVectorView_HSTRING_Release(view);
     if (SUCCEEDED(hr)) *out = op;
+    return hr;
+
+cleanup:
+    { UINT32 i; for (i = 0; i < count; i++) HeapFree(GetProcessHeap(), 0, (void *)names_buf[i]); }
+    HeapFree(GetProcessHeap(), 0, names_buf);
     return hr;
 }
 
 static HRESULT STDMETHODCALLTYPE container_DeleteAsync(IConnectedStorageContainer *iface,
     void *names, void **out)
 {
+    struct container_obj *impl = impl_from_container(iface);
     async_op *op;
     HRESULT hr;
-    FIXME("(%p, %p, %p): stub\n", iface, names, out);
+
+    TRACE("(%p, names %p, %p)\n", iface, names, out);
+
+    if (names)
+    {
+        IIterable_HSTRING *iterable = NULL;
+        if (SUCCEEDED(IUnknown_QueryInterface((IUnknown *)names, &IID_IIterable_HSTRING,
+            (void **)&iterable)))
+        {
+            IIterator_HSTRING *iter = NULL;
+            boolean has;
+            if (SUCCEEDED(IIterable_HSTRING_First(iterable, &iter)))
+            {
+                IIterator_HSTRING_get_HasCurrent(iter, &has);
+                while (has)
+                {
+                    HSTRING name = NULL;
+                    WCHAR path[MAX_PATH];
+                    IIterator_HSTRING_get_Current(iter, &name);
+                    lstrcpyW(path, impl->path);
+                    lstrcatW(path, L"\\");
+                    lstrcatW(path, WindowsGetStringRawBuffer(name, NULL));
+                    DeleteFileW(path);
+                    WindowsDeleteString(name);
+                    IIterator_HSTRING_MoveNext(iter, &has);
+                }
+                IIterator_HSTRING_Release(iter);
+            }
+            IIterable_HSTRING_Release(iterable);
+        }
+    }
+
     hr = async_op_create(NULL, &op);
     if (SUCCEEDED(hr)) *out = op;
     return hr;
@@ -396,9 +716,23 @@ static HRESULT STDMETHODCALLTYPE space_CreateContainer(IConnectedStorageSpace *i
 static HRESULT STDMETHODCALLTYPE space_DeleteContainerAsync(IConnectedStorageSpace *iface,
     HSTRING name, void **out)
 {
+    struct space_obj *impl = impl_from_space(iface);
+    WCHAR path[MAX_PATH];
+    SHFILEOPSTRUCTW op_struct = {0};
     async_op *op;
     HRESULT hr;
-    FIXME("(%p, %s, %p): stub\n", iface, debugstr_hstring(name), out);
+
+    TRACE("(%p, %s, %p)\n", iface, debugstr_hstring(name), out);
+
+    lstrcpyW(path, impl->root);
+    lstrcatW(path, WindowsGetStringRawBuffer(name, NULL));
+    /* SHFileOperation needs double-null terminated path */
+    path[lstrlenW(path) + 1] = 0;
+    op_struct.wFunc = FO_DELETE;
+    op_struct.pFrom = path;
+    op_struct.fFlags = FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT;
+    SHFileOperationW(&op_struct);
+
     hr = async_op_create(NULL, &op);
     if (SUCCEEDED(hr)) *out = op;
     return hr;

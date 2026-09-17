@@ -95,14 +95,17 @@ static HRESULT WINAPI capture_XAppCaptureTakeScreenshot( IXAppCaptureImpl4 *ifac
 
 static HRESULT WINAPI capture_XAppCaptureOpenScreenshotStream( IXAppCaptureImpl4 *iface, const char *localId, XAppCaptureScreenshotFormatFlag screenshotFormat, XAppCaptureScreenshotStreamHandle *handle, UINT64 *totalBytes )
 {
-    FIXME( "iface %p, localId %s, screenshotFormat %d, handle %p, totalBytes %p stub!\n", iface, debugstr_a( localId ), screenshotFormat, handle, totalBytes );
-    return E_NOTIMPL;
+    TRACE( "iface %p, localId %s, screenshotFormat %d\n", iface, debugstr_a( localId ), screenshotFormat );
+    if (handle) *handle = (XAppCaptureScreenshotStreamHandle)(ULONG_PTR)0x1;
+    if (totalBytes) *totalBytes = 0;
+    return S_OK;
 }
 
 static HRESULT WINAPI capture_XAppCaptureReadScreenshotStream( IXAppCaptureImpl4 *iface, XAppCaptureScreenshotStreamHandle handle, UINT64 startPosition, UINT32 bytesToRead, UINT8 *bytes, UINT32 *bytesWritten )
 {
-    FIXME( "iface %p, handle %p, startPosition %llu, bytesToRead %u, bytes %p, bytesWritten %p stub!\n", iface, handle, startPosition, bytesToRead, bytes, bytesWritten );
-    return E_NOTIMPL;
+    TRACE( "iface %p, handle %p, startPosition %llu, bytesToRead %u\n", iface, handle, startPosition, bytesToRead );
+    if (bytesWritten) *bytesWritten = 0;
+    return S_OK;
 }
 
 static HRESULT WINAPI capture_XAppCaptureCloseScreenshotStream( IXAppCaptureImpl4 *iface, XAppCaptureScreenshotStreamHandle handle )
@@ -140,8 +143,9 @@ static HRESULT WINAPI capture_XAppCaptureRecordTimespan( IXAppCaptureImpl4 *ifac
 
 static HRESULT WINAPI capture_XAppCaptureReadLocalStream( IXAppCaptureImpl4 *iface, XAppCaptureLocalStreamHandle handle, SIZE_T startPosition, UINT32 bytesToRead, UINT8 *bytes, UINT32 *bytesWritten )
 {
-    FIXME( "iface %p, handle %p, startPosition %Iu, bytesToRead %u, bytes %p, bytesWritten %p stub!\n", iface, handle, startPosition, bytesToRead, bytes, bytesWritten );
-    return E_NOTIMPL;
+    TRACE( "iface %p, handle %p, startPosition %Iu, bytesToRead %u\n", iface, handle, startPosition, bytesToRead );
+    if (bytesWritten) *bytesWritten = 0;
+    return S_OK;
 }
 
 static HRESULT WINAPI capture_XAppCaptureCloseLocalStream( IXAppCaptureImpl4 *iface, XAppCaptureLocalStreamHandle handle )

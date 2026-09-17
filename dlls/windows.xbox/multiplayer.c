@@ -90,17 +90,17 @@ static HRESULT STDMETHODCALLTYPE mp_GetTL(IMultiplayerManagerStatics *iface, Tru
 { *tl = BaseTrust; return S_OK; }
 
 static HRESULT STDMETHODCALLTYPE mp_get_IsJoinable(IMultiplayerManagerStatics *iface, boolean *v)
-{ FIXME("stub\n"); *v = FALSE; return S_OK; }
+{ TRACE("(%p, %p)\n", iface, v); *v = FALSE; return S_OK; }
 static HRESULT STDMETHODCALLTYPE mp_put_IsJoinable(IMultiplayerManagerStatics *iface, boolean v)
-{ FIXME("stub\n"); return S_OK; }
+{ TRACE("(%p, %d)\n", iface, v); return S_OK; }
 static HRESULT STDMETHODCALLTYPE mp_get_SessionCount(IMultiplayerManagerStatics *iface, UINT32 *v)
 { *v = 0; return S_OK; }
 static HRESULT STDMETHODCALLTYPE mp_GetSession(IMultiplayerManagerStatics *iface, UINT32 idx, void **out)
-{ FIXME("stub\n"); *out = NULL; return E_BOUNDS; }
+{ TRACE("(%p, %u, %p)\n", iface, idx, out); *out = NULL; return E_BOUNDS; }
 static HRESULT STDMETHODCALLTYPE mp_CreateSession(IMultiplayerManagerStatics *iface, HSTRING tmpl, void **out)
-{ FIXME("stub\n"); *out = NULL; return E_NOTIMPL; }
+{ TRACE("(%p, %p, %p)\n", iface, tmpl, out); *out = NULL; return E_BOUNDS; }
 static HRESULT STDMETHODCALLTYPE mp_RemoveSession(IMultiplayerManagerStatics *iface, void *session)
-{ FIXME("stub\n"); return S_OK; }
+{ TRACE("(%p, %p)\n", iface, session); return S_OK; }
 
 static const IMultiplayerManagerStaticsVtbl mp_vtbl =
 {

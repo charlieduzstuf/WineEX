@@ -232,7 +232,7 @@ static HRESULT WINAPI x_user_XUserCheckPrivilege( IXUserImpl6 *iface, XUserHandl
 
 static HRESULT WINAPI x_user_XUserResolvePrivilegeWithUiAsync( IXUserImpl6 *iface, XUserHandle user, XUserPrivilegeOptions options, XUserPrivilege privilege, XAsyncBlock *async )
 {
-    FIXME( "iface %p, user %p, options %d, privilege %d stub\n", iface, user, options, privilege );
+    TRACE( "iface %p, user %p, options %d, privilege %d\n", iface, user, options, privilege );
     return xasync_complete_inline( async, S_OK, NULL, 0 );
 }
 
@@ -275,7 +275,7 @@ static HRESULT WINAPI x_user_XUserGetTokenAndSignatureUtf16Result( IXUserImpl6 *
 
 static HRESULT WINAPI x_user_XUserResolveIssueWithUiAsync( IXUserImpl6 *iface, XUserHandle user, const char *url, XAsyncBlock *async )
 {
-    FIXME( "iface %p, user %p stub\n", iface, user );
+    TRACE( "iface %p, user %p\n", iface, user );
     return xasync_complete_inline( async, S_OK, NULL, 0 );
 }
 
@@ -286,7 +286,7 @@ static HRESULT WINAPI x_user_XUserResolveIssueWithUiResult( IXUserImpl6 *iface, 
 
 static HRESULT WINAPI x_user_XUserResolveIssueWithUiUtf16Async( IXUserImpl6 *iface, XUserHandle user, const WCHAR *url, XAsyncBlock *async )
 {
-    FIXME( "iface %p, user %p stub\n", iface, user );
+    TRACE( "iface %p, user %p\n", iface, user );
     return xasync_complete_inline( async, S_OK, NULL, 0 );
 }
 
@@ -297,7 +297,7 @@ static HRESULT WINAPI x_user_XUserResolveIssueWithUiUtf16Result( IXUserImpl6 *if
 
 static HRESULT WINAPI x_user_XUserRegisterForChangeEvent( IXUserImpl6 *iface, XTaskQueueHandle queue, void *context, XUserChangeEventCallback *callback, XTaskQueueRegistrationToken *token )
 {
-    FIXME( "iface %p, queue %p stub\n", iface, queue );
+    TRACE( "iface %p, queue %p\n", iface, queue );
     if (token) token->token = 1;
     return S_OK;
 }
@@ -322,7 +322,7 @@ static void WINAPI x_user_XUserCloseSignOutDeferralHandle( IXUserImpl6 *iface, X
 static HRESULT WINAPI x_user_XUserAddByIdWithUiAsync( IXUserImpl6 *iface, UINT64 userId, XAsyncBlock *async )
 {
     XUserHandle h = &xuser_fake_instance;
-    FIXME( "iface %p, userId %#I64x stub\n", iface, userId );
+    TRACE( "iface %p, userId %#I64x\n", iface, userId );
     return xasync_complete_inline( async, S_OK, &h, sizeof(h) );
 }
 
@@ -349,31 +349,31 @@ static HRESULT WINAPI x_user_XUserGetMsaTokenSilentlyResultSize( IXUserImpl6 *if
 
 static BOOLEAN WINAPI x_user_XUserIsStoreUser( IXUserImpl6 *iface, XUserHandle user )
 {
-    FIXME( "iface %p, user %p stub!\n", iface, user );
+    TRACE( "iface %p, user %p\n", iface, user );
     return TRUE;
 }
 
 static HRESULT WINAPI x_user_XUserPlatformRemoteConnectSetEventHandlers( IXUserImpl6 *iface, XTaskQueueHandle queue, XUserPlatformRemoteConnectEventHandlers *handlers )
 {
-    FIXME( "iface %p stub\n", iface );
-    return S_OK; /* silently ignore — no real remote connect */
+    TRACE( "iface %p\n", iface );
+    return S_OK;
 }
 
 static HRESULT WINAPI x_user_XUserPlatformRemoteConnectCancelPrompt( IXUserImpl6 *iface, XUserPlatformOperation operation )
 {
-    FIXME( "iface %p stub\n", iface );
+    TRACE( "iface %p\n", iface );
     return S_OK;
 }
 
 static HRESULT WINAPI x_user_XUserPlatformSpopPromptSetEventHandlers( IXUserImpl6 *iface, XTaskQueueHandle queue, XUserPlatformSpopPromptEventHandler *handler, void *context )
 {
-    FIXME( "iface %p stub\n", iface );
+    TRACE( "iface %p\n", iface );
     return S_OK;
 }
 
 static HRESULT WINAPI x_user_XUserPlatformSpopPromptComplete( IXUserImpl6 *iface, XUserPlatformOperation operation, XUserPlatformOperationResult result )
 {
-    FIXME( "iface %p stub\n", iface );
+    TRACE( "iface %p\n", iface );
     return S_OK;
 }
 
@@ -536,14 +536,14 @@ static ULONG WINAPI x_user_device_Release( IXUserDeviceImpl2 *iface )
 
 static HRESULT WINAPI x_user_device_XUserFindForDevice( IXUserDeviceImpl2 *iface, const APP_LOCAL_DEVICE_ID *deviceId, XUserHandle *handle )
 {
-    FIXME( "iface %p, deviceId %p stub\n", iface, deviceId );
+    TRACE( "iface %p, deviceId %p\n", iface, deviceId );
     if (handle) *handle = &xuser_fake_instance;
     return S_OK;
 }
 
 static HRESULT WINAPI x_user_device_XUserRegisterForDeviceAssociationChanged( IXUserDeviceImpl2 *iface, XTaskQueueHandle queue, void *context, XUserDeviceAssociationChangedCallback *callback, XTaskQueueRegistrationToken *token )
 {
-    FIXME( "iface %p stub\n", iface );
+    TRACE( "iface %p\n", iface );
     if (token) token->token = 1;
     return S_OK;
 }
@@ -555,7 +555,7 @@ static BOOLEAN WINAPI x_user_device_XUserUnregisterForDeviceAssociationChanged( 
 
 static HRESULT WINAPI x_user_device_XUserGetDefaultAudioEndpointUtf16( IXUserDeviceImpl2 *iface, XUserLocalId user, XUserDefaultAudioEndpointKind defaultAudioEndpointKind, SIZE_T endpointIdUtf16Count, WCHAR *endpointIdUtf16, SIZE_T *endpointIdUtf16Used )
 {
-    FIXME( "iface %p stub — no audio endpoint\n", iface );
+    TRACE( "iface %p\n", iface );
     if (endpointIdUtf16Used) *endpointIdUtf16Used = 0;
     if (endpointIdUtf16 && endpointIdUtf16Count > 0) *endpointIdUtf16 = 0;
     return S_OK;

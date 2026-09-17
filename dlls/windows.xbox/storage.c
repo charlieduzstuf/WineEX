@@ -740,9 +740,58 @@ static HRESULT STDMETHODCALLTYPE space_DeleteContainerAsync(IConnectedStorageSpa
 
 static HRESULT STDMETHODCALLTYPE space_GetContainerNames(IConnectedStorageSpace *iface, void **out)
 {
-    FIXME("(%p, %p): stub\n", iface, out);
-    *out = NULL;
-    return E_NOTIMPL;
+    struct space_obj *impl = impl_from_space(iface);
+    WCHAR pattern[MAX_PATH];
+    WIN32_FIND_DATAW data;
+    HANDLE hfind;
+    const WCHAR **names_buf = NULL;
+    UINT32 count = 0, cap = 0;
+    IVectorView_HSTRING *view;
+    async_op *op;
+    HRESULT hr = S_OK;
+
+    TRACE("(%p, %p)\n", iface, out);
+
+    lstrcpyW(pattern, impl->root);
+    lstrcatW(pattern, L"*");
+
+    hfind = FindFirstFileW(pattern, &data);
+    if (hfind != INVALID_HANDLE_VALUE)
+    {
+        do {
+            WCHAR *copy;
+            if (!lstrcmpW(data.cFileName, L".") || !lstrcmpW(data.cFileName, L"..")) continue;
+            if (!(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) continue;
+            if (count >= cap)
+            {
+                UINT32 newcap = cap ? cap * 2 : 8;
+                const WCHAR **tmp = HeapReAlloc(GetProcessHeap(), 0, names_buf,
+                    newcap * sizeof(*names_buf));
+                if (!tmp) { hr = E_OUTOFMEMORY; FindClose(hfind); goto cleanup; }
+                names_buf = tmp; cap = newcap;
+            }
+            copy = HeapAlloc(GetProcessHeap(), 0, (lstrlenW(data.cFileName) + 1) * sizeof(WCHAR));
+            if (!copy) { hr = E_OUTOFMEMORY; FindClose(hfind); goto cleanup; }
+            lstrcpyW(copy, data.cFileName);
+            names_buf[count++] = copy;
+        } while (FindNextFileW(hfind, &data));
+        FindClose(hfind);
+    }
+
+    hr = hstr_view_create(names_buf, count, &view);
+    { UINT32 i; for (i = 0; i < count; i++) HeapFree(GetProcessHeap(), 0, (void *)names_buf[i]); }
+    HeapFree(GetProcessHeap(), 0, names_buf);
+    if (FAILED(hr)) return hr;
+
+    hr = async_op_create((IInspectable *)view, &op);
+    IVectorView_HSTRING_Release(view);
+    if (SUCCEEDED(hr)) *out = op;
+    return hr;
+
+cleanup:
+    { UINT32 i; for (i = 0; i < count; i++) HeapFree(GetProcessHeap(), 0, (void *)names_buf[i]); }
+    HeapFree(GetProcessHeap(), 0, names_buf);
+    return hr;
 }
 
 static const IConnectedStorageSpaceVtbl space_vtbl =

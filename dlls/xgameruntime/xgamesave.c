@@ -206,7 +206,7 @@ static HRESULT WINAPI x_game_save_XGameSaveGetRemainingQuotaResult( IXGameSaveIm
 static HRESULT WINAPI x_game_save_XGameSaveDeleteContainer( IXGameSaveImpl3 *iface, XGameSaveProviderHandle provider, const char *containerName )
 {
     WCHAR path[MAX_PATH];
-    FIXME( "iface %p, container %s — deleting directory\n", iface, debugstr_a( containerName ) );
+    TRACE( "iface %p, container %s\n", iface, debugstr_a( containerName ) );
     if (!provider) return E_INVALIDARG;
     _snwprintf( path, MAX_PATH, L"%s%S", provider->base_path, containerName );
     RemoveDirectoryW( path );
@@ -539,7 +539,7 @@ static HRESULT WINAPI x_game_save_XGameSaveFilesGetFolderWithUiAsync( IXGameSave
     WCHAR base[MAX_PATH];
     char base_a[MAX_PATH];
     SIZE_T len;
-    FIXME( "iface %p, configId %s stub\n", iface, debugstr_a( configurationId ) );
+    TRACE( "iface %p, configId %s\n", iface, debugstr_a( configurationId ) );
     gamesave_make_base_path( configurationId, base, MAX_PATH );
     WideCharToMultiByte( CP_UTF8, 0, base, -1, base_a, sizeof(base_a), NULL, NULL );
     len = strlen( base_a ) + 1;

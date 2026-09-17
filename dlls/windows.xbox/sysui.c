@@ -92,35 +92,91 @@ static HRESULT STDMETHODCALLTYPE su_GetRTCN(ISystemUIStatics *iface, HSTRING *cn
 static HRESULT STDMETHODCALLTYPE su_GetTL(ISystemUIStatics *iface, TrustLevel *tl)
 { *tl = BaseTrust; return S_OK; }
 
-/* All show operations: FIXME-log and return a completed-null async op */
+/* Minimal completed IAsyncOperation returning NULL result, used for all show ops */
+typedef struct su_async su_async;
+typedef struct {
+    HRESULT (STDMETHODCALLTYPE *QueryInterface)(su_async*, REFIID, void**);
+    ULONG   (STDMETHODCALLTYPE *AddRef)(su_async*);
+    ULONG   (STDMETHODCALLTYPE *Release)(su_async*);
+    HRESULT (STDMETHODCALLTYPE *GetIids)(su_async*, ULONG*, IID**);
+    HRESULT (STDMETHODCALLTYPE *GetRuntimeClassName)(su_async*, HSTRING*);
+    HRESULT (STDMETHODCALLTYPE *GetTrustLevel)(su_async*, TrustLevel*);
+    HRESULT (STDMETHODCALLTYPE *get_Id)(su_async*, UINT32*);
+    HRESULT (STDMETHODCALLTYPE *get_Status)(su_async*, AsyncStatus*);
+    HRESULT (STDMETHODCALLTYPE *get_ErrorCode)(su_async*, HRESULT*);
+    HRESULT (STDMETHODCALLTYPE *Cancel)(su_async*);
+    HRESULT (STDMETHODCALLTYPE *Close)(su_async*);
+    HRESULT (STDMETHODCALLTYPE *put_Completed)(su_async*, void*);
+    HRESULT (STDMETHODCALLTYPE *get_Completed)(su_async*, void**);
+    HRESULT (STDMETHODCALLTYPE *GetResults)(su_async*, void**);
+} su_async_vtbl;
+struct su_async { CONST_VTBL su_async_vtbl *lpVtbl; LONG ref; };
+
+typedef struct { HRESULT (STDMETHODCALLTYPE *QI)(void*,REFIID,void**);
+                 ULONG   (STDMETHODCALLTYPE *AddRef)(void*);
+                 ULONG   (STDMETHODCALLTYPE *Release)(void*);
+                 HRESULT (STDMETHODCALLTYPE *Invoke)(void*,su_async*,AsyncStatus); } su_handler_vtbl;
+
+static HRESULT STDMETHODCALLTYPE sa_QI(su_async *a, REFIID iid, void **out)
+{ if (IsEqualGUID(iid,&IID_IUnknown)||IsEqualGUID(iid,&IID_IInspectable)||IsEqualGUID(iid,&IID_IAsyncInfo))
+  { InterlockedIncrement(&a->ref); *out=a; return S_OK; } *out=NULL; return E_NOINTERFACE; }
+static ULONG STDMETHODCALLTYPE sa_AddRef(su_async *a)  { return InterlockedIncrement(&a->ref); }
+static ULONG STDMETHODCALLTYPE sa_Release(su_async *a)
+{ ULONG r=InterlockedDecrement(&a->ref); if(!r) HeapFree(GetProcessHeap(),0,a); return r; }
+static HRESULT STDMETHODCALLTYPE sa_GetIids(su_async *a,ULONG *n,IID **ids){*n=0;*ids=NULL;return S_OK;}
+static HRESULT STDMETHODCALLTYPE sa_GetRTCN(su_async *a,HSTRING *cn){*cn=NULL;return S_OK;}
+static HRESULT STDMETHODCALLTYPE sa_GetTL(su_async *a,TrustLevel *tl){*tl=BaseTrust;return S_OK;}
+static HRESULT STDMETHODCALLTYPE sa_get_Id(su_async *a,UINT32 *id){*id=1;return S_OK;}
+static HRESULT STDMETHODCALLTYPE sa_get_Status(su_async *a,AsyncStatus *s){*s=Completed;return S_OK;}
+static HRESULT STDMETHODCALLTYPE sa_get_ErrorCode(su_async *a,HRESULT *hr){*hr=S_OK;return S_OK;}
+static HRESULT STDMETHODCALLTYPE sa_Cancel(su_async *a){return S_OK;}
+static HRESULT STDMETHODCALLTYPE sa_Close(su_async *a){return S_OK;}
+static HRESULT STDMETHODCALLTYPE sa_put_Completed(su_async *a, void *handler)
+{
+    if (handler) {
+        su_handler_vtbl **h = (su_handler_vtbl **)handler;
+        (*h)->Invoke(handler, a, Completed);
+    }
+    return S_OK;
+}
+static HRESULT STDMETHODCALLTYPE sa_get_Completed(su_async *a,void **h){*h=NULL;return S_OK;}
+static HRESULT STDMETHODCALLTYPE sa_GetResults(su_async *a,void **out){*out=NULL;return S_OK;}
+
+static const su_async_vtbl sa_vtbl = {
+    sa_QI, sa_AddRef, sa_Release, sa_GetIids, sa_GetRTCN, sa_GetTL,
+    sa_get_Id, sa_get_Status, sa_get_ErrorCode, sa_Cancel, sa_Close,
+    sa_put_Completed, sa_get_Completed, sa_GetResults,
+};
+
 static HRESULT make_null_async(void **out)
 {
-    /* Re-use the async_op type from storage.c is not accessible here.
-     * Return E_NOTIMPL — the game will handle missing system UI gracefully. */
-    FIXME("system UI operation not implemented\n");
-    *out = NULL;
-    return E_NOTIMPL;
+    su_async *a = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(*a));
+    if (!a) return E_OUTOFMEMORY;
+    a->lpVtbl = &sa_vtbl;
+    a->ref = 1;
+    *out = a;
+    return S_OK;
 }
 
 static HRESULT STDMETHODCALLTYPE su_ShowProfileCard(ISystemUIStatics *iface, void *user, void **out)
-{ return make_null_async(out); }
+{ TRACE("(%p, %p, %p)\n", iface, user, out); return make_null_async(out); }
 
 static HRESULT STDMETHODCALLTYPE su_ShowChangeFriendRelationship(ISystemUIStatics *iface, void *user, void **out)
-{ return make_null_async(out); }
+{ TRACE("(%p, %p, %p)\n", iface, user, out); return make_null_async(out); }
 
 static HRESULT STDMETHODCALLTYPE su_ShowTitleAchievements(ISystemUIStatics *iface, UINT32 tid, void **out)
-{ return make_null_async(out); }
+{ TRACE("(%p, %u, %p)\n", iface, tid, out); return make_null_async(out); }
 
 static HRESULT STDMETHODCALLTYPE su_HasSyncOccurred(ISystemUIStatics *iface, boolean *value)
-{ *value = TRUE; return S_OK; }
+{ TRACE("(%p, %p)\n", iface, value); *value = TRUE; return S_OK; }
 
 static HRESULT STDMETHODCALLTYPE su_ShowSendGameInvites(ISystemUIStatics *iface, void *user,
     void *session_ref, void **out)
-{ return make_null_async(out); }
+{ TRACE("(%p, %p, %p, %p)\n", iface, user, session_ref, out); return make_null_async(out); }
 
 static HRESULT STDMETHODCALLTYPE su_ShowAchievementNotification(ISystemUIStatics *iface,
     void *user, UINT32 tid, HSTRING achievement_id, void **out)
-{ return make_null_async(out); }
+{ TRACE("(%p, %p, %u, %p, %p)\n", iface, user, tid, achievement_id, out); return make_null_async(out); }
 
 static const ISystemUIStaticsVtbl su_vtbl =
 {

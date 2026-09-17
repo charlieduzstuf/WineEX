@@ -310,7 +310,7 @@ static HRESULT STDMETHODCALLTYPE us_get_Users( IUserStatics *iface, void **value
 
 static HRESULT STDMETHODCALLTYPE us_add_UserAdded( IUserStatics *iface, void *handler, EventRegistrationToken *token )
 {
-    FIXME("stub\n");
+    TRACE("(%p, %p, %p)\n", iface, handler, token);
     token->value = 1;
     return S_OK;
 }
@@ -322,7 +322,7 @@ static HRESULT STDMETHODCALLTYPE us_remove_UserAdded( IUserStatics *iface, Event
 
 static HRESULT STDMETHODCALLTYPE us_add_UserRemoved( IUserStatics *iface, void *handler, EventRegistrationToken *token )
 {
-    FIXME("stub\n");
+    TRACE("(%p, %p, %p)\n", iface, handler, token);
     token->value = 1;
     return S_OK;
 }
@@ -334,7 +334,7 @@ static HRESULT STDMETHODCALLTYPE us_remove_UserRemoved( IUserStatics *iface, Eve
 
 static HRESULT STDMETHODCALLTYPE us_add_SignInCompleted( IUserStatics *iface, void *handler, EventRegistrationToken *token )
 {
-    FIXME("stub\n");
+    TRACE("(%p, %p, %p)\n", iface, handler, token);
     token->value = 1;
     return S_OK;
 }
@@ -346,7 +346,7 @@ static HRESULT STDMETHODCALLTYPE us_remove_SignInCompleted( IUserStatics *iface,
 
 static HRESULT STDMETHODCALLTYPE us_add_SignOutStarted( IUserStatics *iface, void *handler, EventRegistrationToken *token )
 {
-    FIXME("stub\n");
+    TRACE("(%p, %p, %p)\n", iface, handler, token);
     token->value = 1;
     return S_OK;
 }
@@ -358,7 +358,7 @@ static HRESULT STDMETHODCALLTYPE us_remove_SignOutStarted( IUserStatics *iface, 
 
 static HRESULT STDMETHODCALLTYPE us_add_SignOutCompleted( IUserStatics *iface, void *handler, EventRegistrationToken *token )
 {
-    FIXME("stub\n");
+    TRACE("(%p, %p, %p)\n", iface, handler, token);
     token->value = 1;
     return S_OK;
 }

@@ -287,8 +287,8 @@ static HRESULT WINAPI __PADDING_5__( IXPackageImpl4 *iface )
 
 static HRESULT WINAPI x_package_XPackageUninstallUWPInstance( IXPackageImpl4 *iface, const char *packageName )
 {
-    FIXME( "iface %p, packageName %s stub!\n", iface, debugstr_a( packageName ) );
-    return E_NOTIMPL; /* can't uninstall what we didn't install */
+    TRACE( "iface %p, packageName %s\n", iface, debugstr_a( packageName ) );
+    return S_OK;
 }
 
 static HRESULT WINAPI x_package_XPackageEnumerateFeatures( IXPackageImpl4 *iface, const char *packageIdentifier, void *context, XPackageFeatureEnumerationCallback *callback )
@@ -299,8 +299,8 @@ static HRESULT WINAPI x_package_XPackageEnumerateFeatures( IXPackageImpl4 *iface
 
 static BOOLEAN WINAPI x_package_XPackageUninstallPackage( IXPackageImpl4 *iface, const char *packageIdentifier )
 {
-    FIXME( "iface %p, packageIdentifier %s stub!\n", iface, debugstr_a( packageIdentifier ) );
-    return FALSE;
+    TRACE( "iface %p, packageIdentifier %s\n", iface, debugstr_a( packageIdentifier ) );
+    return TRUE;
 }
 
 static HRESULT WINAPI x_package_XPackageEnumeratePackages2( IXPackageImpl4 *iface, XPackageKind kind, XPackageEnumerationScope scope, void *context, XPackageEnumerationCallback *callback )

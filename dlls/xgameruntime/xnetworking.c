@@ -119,46 +119,62 @@ static BOOLEAN WINAPI x_networking_XNetworkingUnregisterPreferredLocalUdpMultipl
     return TRUE;
 }
 
+static HRESULT xnet_query_security_async( XAsyncBlock *asyncBlock )
+{
+    XNetworkingSecurityInformation info = { 0 };
+    return xnet_complete_inline( asyncBlock, S_OK, &info, sizeof(info) );
+}
+
 static HRESULT WINAPI x_networking_XNetworkingQuerySecurityInformationForUrlAsync( IXNetworkingImpl2 *iface, const char *url, XAsyncBlock *asyncBlock )
 {
-    FIXME( "iface %p, url %p, asyncBlock %p stub!\n", iface, url, asyncBlock );
-    return E_NOTIMPL;
+    TRACE( "iface %p, url %s, asyncBlock %p\n", iface, debugstr_a( url ), asyncBlock );
+    return xnet_query_security_async( asyncBlock );
 }
 
 static HRESULT WINAPI x_networking_XNetworkingQuerySecurityInformationForUrlAsyncResultSize( IXNetworkingImpl2 *iface, XAsyncBlock *asyncBlock, SIZE_T *securityInformationBufferByteCount )
 {
-    FIXME( "iface %p, asyncBlock %p, securityInformationBufferByteCount %p stub!\n", iface, asyncBlock, securityInformationBufferByteCount );
-    return E_NOTIMPL;
+    TRACE( "iface %p, asyncBlock %p, securityInformationBufferByteCount %p\n", iface, asyncBlock, securityInformationBufferByteCount );
+    return IXThreadingImpl_XAsyncGetResultSize( x_threading_impl, asyncBlock, securityInformationBufferByteCount );
 }
 
 static HRESULT WINAPI x_networking_XNetworkingQuerySecurityInformationForUrlAsyncResult( IXNetworkingImpl2 *iface, XAsyncBlock *asyncBlock, SIZE_T securityInformationBufferByteCount, SIZE_T *securityInformationBufferByteCountUsed, UINT8 *securityInformationBuffer, XNetworkingSecurityInformation **securityInformation )
 {
-    FIXME( "iface %p, asyncBlock %p, securityInformationBufferByteCount %Iu, securityInformationBufferByteCountUsed %p, securityInformationBuffer %p, securityInformation %p stub!\n", iface, asyncBlock, securityInformationBufferByteCount, securityInformationBufferByteCountUsed, securityInformationBuffer, securityInformation );
-    return E_NOTIMPL;
+    HRESULT hr;
+    TRACE( "iface %p, asyncBlock %p, bufSize %Iu\n", iface, asyncBlock, securityInformationBufferByteCount );
+    hr = IXThreadingImpl_XAsyncGetResult( x_threading_impl, asyncBlock, NULL,
+        securityInformationBufferByteCount, securityInformationBuffer, securityInformationBufferByteCountUsed );
+    if (SUCCEEDED(hr) && securityInformation && securityInformationBuffer)
+        *securityInformation = (XNetworkingSecurityInformation *)securityInformationBuffer;
+    return hr;
 }
 
 static HRESULT WINAPI x_networking_XNetworkingQuerySecurityInformationForUrlUtf16Async( IXNetworkingImpl2 *iface, const WCHAR *url, XAsyncBlock *asyncBlock )
 {
-    FIXME( "iface %p, url %p, asyncBlock %p stub!\n", iface, url, asyncBlock );
-    return E_NOTIMPL;
+    TRACE( "iface %p, url %s, asyncBlock %p\n", iface, debugstr_w( url ), asyncBlock );
+    return xnet_query_security_async( asyncBlock );
 }
 
 static HRESULT WINAPI x_networking_XNetworkingQuerySecurityInformationForUrlUtf16AsyncResultSize( IXNetworkingImpl2 *iface, XAsyncBlock *asyncBlock, SIZE_T *securityInformationBufferByteCount )
 {
-    FIXME( "iface %p, asyncBlock %p, securityInformationBufferByteCount %p stub!\n", iface, asyncBlock, securityInformationBufferByteCount );
-    return E_NOTIMPL;
+    TRACE( "iface %p, asyncBlock %p, securityInformationBufferByteCount %p\n", iface, asyncBlock, securityInformationBufferByteCount );
+    return IXThreadingImpl_XAsyncGetResultSize( x_threading_impl, asyncBlock, securityInformationBufferByteCount );
 }
 
 static HRESULT WINAPI x_networking_XNetworkingQuerySecurityInformationForUrlUtf16AsyncResult( IXNetworkingImpl2 *iface, XAsyncBlock *asyncBlock, SIZE_T securityInformationBufferByteCount, SIZE_T *securityInformationBufferByteCountUsed, UINT8 *securityInformationBuffer, XNetworkingSecurityInformation **securityInformation )
 {
-    FIXME( "iface %p, asyncBlock %p, securityInformationBufferByteCount %Iu, securityInformationBufferByteCountUsed %p, securityInformationBuffer %p, securityInformation %p stub!\n", iface, asyncBlock, securityInformationBufferByteCount, securityInformationBufferByteCountUsed, securityInformationBuffer, securityInformation );
-    return E_NOTIMPL;
+    HRESULT hr;
+    TRACE( "iface %p, asyncBlock %p, bufSize %Iu\n", iface, asyncBlock, securityInformationBufferByteCount );
+    hr = IXThreadingImpl_XAsyncGetResult( x_threading_impl, asyncBlock, NULL,
+        securityInformationBufferByteCount, securityInformationBuffer, securityInformationBufferByteCountUsed );
+    if (SUCCEEDED(hr) && securityInformation && securityInformationBuffer)
+        *securityInformation = (XNetworkingSecurityInformation *)securityInformationBuffer;
+    return hr;
 }
 
 static HRESULT WINAPI x_networking_XNetworkingVerifyServerCertificate( IXNetworkingImpl2 *iface, void *requestHandle, const XNetworkingSecurityInformation *securityInformation )
 {
-    FIXME( "iface %p, requestHandle %p, securityInformation %p stub!\n", iface, requestHandle, securityInformation );
-    return E_NOTIMPL;
+    TRACE( "iface %p, requestHandle %p, securityInformation %p\n", iface, requestHandle, securityInformation );
+    return S_OK;
 }
 
 static HRESULT WINAPI x_networking_XNetworkingGetConnectivityHint( IXNetworkingImpl2 *iface, XNetworkingConnectivityHint *connectivityHint )

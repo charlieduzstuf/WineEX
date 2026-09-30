@@ -240,20 +240,20 @@ void WINAPI XBOXKRNL_XcBlockCryptCBC(ULONG Type, ULONG Len, void *Out,
 LONG WINAPI XBOXKRNL_XcModExp(void *Result, void *Base, void *Exp,
                                void *Modulus, ULONG Len)
 {
-    FIXME("XcModExp: stub\n");
+    TRACE("XcModExp: stub\n");
     if (Result) memset(Result, 0, Len);
     return 0;
 }
 
 LONG WINAPI XBOXKRNL_XcPKEncPublic(void *Key, void *Input, void *Output)
 {
-    FIXME("XcPKEncPublic: stub\n");
+    TRACE("XcPKEncPublic: stub\n");
     return 0;
 }
 
 LONG WINAPI XBOXKRNL_XcPKDecPrivate(void *Key, void *Input, void *Output)
 {
-    FIXME("XcPKDecPrivate: stub\n");
+    TRACE("XcPKDecPrivate: stub\n");
     return 0;
 }
 
@@ -273,7 +273,7 @@ LONG WINAPI XBOXKRNL_XcVerifyPKCS1Signature(void *Hash, void *PublicKey, void *S
  * ====================================================================== */
 LONG WINAPI XBOXKRNL_XcCryptService(ULONG ServiceCode, void *ServiceData)
 {
-    FIXME("XcCryptService(%lu): stub\n", (ULONG)ServiceCode);
+    TRACE("XcCryptService(%lu): stub\n", (ULONG)ServiceCode);
     return 0;
 }
 

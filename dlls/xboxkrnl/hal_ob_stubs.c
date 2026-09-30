@@ -119,7 +119,7 @@ NTSTATUS WINAPI XBOXKRNL_ObReferenceObjectByHandle(void *Handle, void *ObjectTyp
 NTSTATUS WINAPI XBOXKRNL_ObReferenceObjectByName(void *ObjectName, ULONG Attributes,
     void *ObjectType, void *ParseContext, void **Object)
 {
-    FIXME("ObReferenceObjectByName: stub\n");
+    TRACE("ObReferenceObjectByName: stub\n");
     return STATUS_OBJECT_NAME_NOT_FOUND;
 }
 
@@ -140,7 +140,7 @@ NTSTATUS WINAPI XBOXKRNL_ObCreateObject(void *ObjectType, void *ObjectAttributes
 NTSTATUS WINAPI XBOXKRNL_ObInsertObject(void *Object, void *PassedAccessState,
                                          ULONG DesiredAccess, void *ObjectHandle)
 {
-    FIXME("ObInsertObject: stub\n");
+    TRACE("ObInsertObject: stub\n");
     return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -153,7 +153,7 @@ NTSTATUS WINAPI XBOXKRNL_ObMakeTemporaryObject(void *Object)
 NTSTATUS WINAPI XBOXKRNL_ObOpenObjectByName(void *ObjectAttributes, void *ObjectType,
                                              void *ParseContext, void **Handle)
 {
-    FIXME("ObOpenObjectByName: stub\n");
+    TRACE("ObOpenObjectByName: stub\n");
     return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -532,14 +532,14 @@ XBOX_IRP * WINAPI XBOXKRNL_IoBuildDeviceIoControlRequest(ULONG IoControlCode,
 NTSTATUS WINAPI XBOXKRNL_IoQueryFileInformation(void *FileObject, ULONG FileInfo,
     ULONG Length, void *Buffer, ULONG *RetLength)
 {
-    FIXME("IoQueryFileInformation: stub\n");
+    TRACE("IoQueryFileInformation: stub\n");
     return STATUS_NOT_IMPLEMENTED;
 }
 
 NTSTATUS WINAPI XBOXKRNL_IoQueryVolumeInformation(void *FileObject, ULONG FsInfo,
     ULONG Length, void *Buffer, ULONG *RetLength)
 {
-    FIXME("IoQueryVolumeInformation: stub\n");
+    TRACE("IoQueryVolumeInformation: stub\n");
     return STATUS_NOT_IMPLEMENTED;
 }
 
@@ -548,14 +548,14 @@ NTSTATUS WINAPI XBOXKRNL_IoSynchronousDeviceIoControlRequest(ULONG IoControlCode
     void *DeviceObject, void *InBuffer, ULONG InLen, void *OutBuffer, ULONG OutLen,
     ULONG *BytesReturned, BOOL InternalDeviceIoControl)
 {
-    FIXME("IoSynchronousDeviceIoControlRequest: stub\n");
+    TRACE("IoSynchronousDeviceIoControlRequest: stub\n");
     return STATUS_NOT_IMPLEMENTED;
 }
 
 NTSTATUS WINAPI XBOXKRNL_IoSynchronousFsdRequest(ULONG MajorFunction, void *DeviceObject,
     void *Buffer, ULONG Length, void *StartingOffset)
 {
-    FIXME("IoSynchronousFsdRequest: stub\n");
+    TRACE("IoSynchronousFsdRequest: stub\n");
     return STATUS_NOT_IMPLEMENTED;
 }
 

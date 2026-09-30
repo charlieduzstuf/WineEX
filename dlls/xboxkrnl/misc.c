@@ -390,12 +390,12 @@ NTSTATUS WINAPI XBOXKRNL_NtQueryDirectoryObject(HANDLE handle, void *info, ULONG
 /* PsQueryStatistics / PsSetCreateThreadNotifyRoutine - safe stubs */
 NTSTATUS WINAPI XBOXKRNL_PsQueryStatistics(void *ProcessStatistics)
 {
-    FIXME("PsQueryStatistics: stub\n");
+    TRACE("PsQueryStatistics: stub\n");
     return STATUS_NOT_IMPLEMENTED;
 }
 
 NTSTATUS WINAPI XBOXKRNL_PsSetCreateThreadNotifyRoutine(void *NotifyRoutine)
 {
-    FIXME("PsSetCreateThreadNotifyRoutine: stub\n");
+    TRACE("PsSetCreateThreadNotifyRoutine: stub\n");
     return STATUS_NOT_IMPLEMENTED;
 }

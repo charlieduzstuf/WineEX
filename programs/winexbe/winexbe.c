@@ -213,6 +213,7 @@ int __cdecl wmain( int argc, WCHAR **argv )
                         OPEN_EXISTING, 0, 0 );
     if (file == INVALID_HANDLE_VALUE) xbe_fatal( "cannot open XBE file" );
 
+    /* Read enough to see the fixed header first */
     hdr_buf = HeapAlloc( GetProcessHeap(), 0, XBE_LOAD_BUFFER );
     if (!hdr_buf) xbe_fatal( "out of memory" );
 
@@ -221,6 +222,18 @@ int __cdecl wmain( int argc, WCHAR **argv )
 
     hdr = (const struct xbe_header *)hdr_buf;
     if (hdr->magic != XBE_MAGIC) xbe_fatal( "not an XBE file (bad magic)" );
+
+    /* Re-read with the XBE-specified header size if it exceeds our initial buffer */
+    if (hdr->sizeof_headers > XBE_LOAD_BUFFER && hdr->sizeof_headers <= 0x200000u)
+    {
+        BYTE *bigger = HeapReAlloc( GetProcessHeap(), 0, hdr_buf, hdr->sizeof_headers );
+        if (!bigger) xbe_fatal( "out of memory re-reading headers" );
+        hdr_buf = bigger;
+        SetFilePointer( file, 0, NULL, FILE_BEGIN );
+        if (!ReadFile( file, hdr_buf, hdr->sizeof_headers, &read, NULL ) || read < sizeof(*hdr) )
+            xbe_fatal( "cannot re-read XBE headers" );
+        hdr = (const struct xbe_header *)hdr_buf;
+    }
 
     /* Decode image type (Cxbx-Reloaded algorithm: XOR candidate then range-check) */
     if ((hdr->entry_addr ^ xbe_xor_ep[XBE_DEBUG]) < 0x01000000u)

@@ -135,10 +135,17 @@ static UINT32 xex_find_opt_header(const BYTE *buf, UINT32 hdr_count, UINT32 key)
  * ====================================================================== */
 static BOOL find_ppc_interpreter(WCHAR *out, DWORD len)
 {
-    /* Check for qemu-ppc or box64 in PATH */
+    /* Check for qemu-ppc in Win32 PATH */
     static const WCHAR *candidates[] = {
         L"qemu-ppc.exe",
         L"qemu-ppc",
+        NULL
+    };
+    /* Unix paths exposed via Wine's Z: drive (root mount) */
+    static const WCHAR *unix_paths[] = {
+        L"Z:\\usr\\bin\\qemu-ppc",
+        L"Z:\\usr\\local\\bin\\qemu-ppc",
+        L"Z:\\opt\\homebrew\\bin\\qemu-ppc",
         NULL
     };
     UINT i;
@@ -148,6 +155,14 @@ static BOOL find_ppc_interpreter(WCHAR *out, DWORD len)
         if (SearchPathW(NULL, candidates[i], NULL, MAX_PATH, path, NULL))
         {
             if (out) lstrcpynW(out, path, len);
+            return TRUE;
+        }
+    }
+    for (i = 0; unix_paths[i]; i++)
+    {
+        if (GetFileAttributesW(unix_paths[i]) != INVALID_FILE_ATTRIBUTES)
+        {
+            if (out) lstrcpynW(out, unix_paths[i], len);
             return TRUE;
         }
     }

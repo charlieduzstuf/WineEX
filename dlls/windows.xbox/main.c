@@ -38,14 +38,14 @@ static HRESULT WINAPI name##_QI(IActivationFactory *iface,REFIID iid,void **out)
     if(IsEqualGUID(iid,&IID_IUnknown)||IsEqualGUID(iid,&IID_IInspectable)|| \
        IsEqualGUID(iid,&IID_IActivationFactory)) \
     { *out=&impl->IActivationFactory_iface; IUnknown_AddRef((IUnknown*)*out); return S_OK; } \
-    FIXME("%s not implemented\n",debugstr_guid(iid)); *out=NULL; return E_NOINTERFACE; \
+    WARN("%s not implemented\n",debugstr_guid(iid)); *out=NULL; return E_NOINTERFACE; \
 } \
 static ULONG WINAPI name##_AddRef(IActivationFactory *iface) \
 { struct name##_factory *impl=impl_from_##name(iface); return InterlockedIncrement(&impl->ref); } \
 static ULONG WINAPI name##_Release(IActivationFactory *iface) \
 { struct name##_factory *impl=impl_from_##name(iface); return InterlockedDecrement(&impl->ref); } \
 static HRESULT WINAPI name##_GetIids(IActivationFactory *iface,ULONG *n,IID **ids){*n=0;*ids=NULL;return S_OK;} \
-static HRESULT WINAPI name##_GetRTCN(IActivationFactory *iface,HSTRING *cn){FIXME("stub\n");return E_NOTIMPL;} \
+static HRESULT WINAPI name##_GetRTCN(IActivationFactory *iface,HSTRING *cn){*cn=NULL;return S_OK;} \
 static HRESULT WINAPI name##_GetTL(IActivationFactory *iface,TrustLevel *tl){*tl=BaseTrust;return S_OK;} \
 static HRESULT WINAPI name##_Activate(IActivationFactory *iface,IInspectable **inst) \
 { FIXME("(%p): Xbox class not implemented\n",iface); *inst=NULL; return E_NOTIMPL; } \

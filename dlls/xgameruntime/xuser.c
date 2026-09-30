@@ -200,7 +200,7 @@ static HRESULT WINAPI __PADDING__( IXUserImpl6 *iface )
 
 static HRESULT WINAPI x_user_XUserGetGamerPictureAsync( IXUserImpl6 *iface, XUserHandle user, XUserGamerPictureSize pictureSize, XAsyncBlock *async )
 {
-    FIXME( "iface %p, user %p stub — no gamerpic\n", iface, user );
+    TRACE( "iface %p, user %p — no gamerpic support\n", iface, user );
     return xasync_complete_inline( async, E_NOTIMPL, NULL, 0 );
 }
 
@@ -243,7 +243,7 @@ static HRESULT WINAPI x_user_XUserResolvePrivilegeWithUiResult( IXUserImpl6 *ifa
 
 static HRESULT WINAPI x_user_XUserGetTokenAndSignatureAsync( IXUserImpl6 *iface, XUserHandle user, XUserGetTokenAndSignatureOptions options, const char *method, const char *url, SIZE_T headerCount, const XUserGetTokenAndSignatureHttpHeader *headers, SIZE_T bodySize, const void *bodyBuffer, XAsyncBlock *async )
 {
-    FIXME( "iface %p, user %p, method %s stub — no Xbox Live\n", iface, user, debugstr_a( method ) );
+    TRACE( "iface %p, user %p, method %s — no Xbox Live\n", iface, user, debugstr_a( method ) );
     return xasync_complete_inline( async, 0x87DD0018 /* XO_E_CONTENT_ISOLATION */, NULL, 0 );
 }
 
@@ -259,7 +259,7 @@ static HRESULT WINAPI x_user_XUserGetTokenAndSignatureResult( IXUserImpl6 *iface
 
 static HRESULT WINAPI x_user_XUserGetTokenAndSignatureUtf16Async( IXUserImpl6 *iface, XUserHandle user, XUserGetTokenAndSignatureOptions options, const WCHAR *method, const WCHAR *url, SIZE_T headerCount, const XUserGetTokenAndSignatureUtf16HttpHeader *headers, SIZE_T bodySize, const void *bodyBuffer, XAsyncBlock *async )
 {
-    FIXME( "iface %p, user %p, method %s stub — no Xbox Live\n", iface, user, debugstr_w( method ) );
+    TRACE( "iface %p, user %p, method %s — no Xbox Live\n", iface, user, debugstr_w( method ) );
     return xasync_complete_inline( async, 0x87DD0018, NULL, 0 );
 }
 
@@ -333,7 +333,7 @@ static HRESULT WINAPI x_user_XUserAddByIdWithUiResult( IXUserImpl6 *iface, XAsyn
 
 static HRESULT WINAPI x_user_XUserGetMsaTokenSilentlyAsync( IXUserImpl6 *iface, XUserHandle user, XUserGetMsaTokenSilentlyOptions options, const char *scope, XAsyncBlock *async )
 {
-    FIXME( "iface %p stub — no Xbox Live MSA token\n", iface );
+    TRACE( "iface %p — no Xbox Live MSA token\n", iface );
     return xasync_complete_inline( async, 0x87DD0018, NULL, 0 );
 }
 

@@ -116,11 +116,11 @@ static HRESULT STDMETHODCALLTYPE mn_SetMaxSize(IManagedNetworkStatics *iface, UI
 static HRESULT STDMETHODCALLTYPE mn_GetMaxSize(IManagedNetworkStatics *iface, UINT32 *sz)
 { TRACE("(%p, %p)\n", iface, sz); *sz = 1400; return S_OK; }
 static HRESULT STDMETHODCALLTYPE mn_StartAdvertising(IManagedNetworkStatics *iface, void *tmpl, void **out)
-{ FIXME("(%p, %p, %p): no network advertising\n", iface, tmpl, out); *out = NULL; return E_NOTIMPL; }
+{ TRACE("(%p, %p, %p): no network advertising\n", iface, tmpl, out); *out = NULL; return E_NOTIMPL; }
 static HRESULT STDMETHODCALLTYPE mn_StopAdvertising(IManagedNetworkStatics *iface)
 { TRACE("(%p)\n", iface); return S_OK; }
 static HRESULT STDMETHODCALLTYPE mn_FindAssocTemplateAsync(IManagedNetworkStatics *iface, HSTRING name, void **out)
-{ FIXME("(%p, %p, %p): no network templates\n", iface, name, out); *out = NULL; return E_NOTIMPL; }
+{ TRACE("(%p, %p, %p): no network templates\n", iface, name, out); *out = NULL; return E_NOTIMPL; }
 
 static const IManagedNetworkStaticsVtbl mn_vtbl =
 {
@@ -150,7 +150,7 @@ static HRESULT STDMETHODCALLTYPE sd_get_Count(ISecureDeviceAssocStatics *iface, 
 static HRESULT STDMETHODCALLTYPE sd_GetAt(ISecureDeviceAssocStatics *iface, UINT32 idx, void **out)
 { TRACE("(%p, %u, %p)\n", iface, idx, out); *out = NULL; return E_BOUNDS; }
 static HRESULT STDMETHODCALLTYPE sd_CreateAsync(ISecureDeviceAssocStatics *iface, void *tmpl, void *addr, void **out)
-{ FIXME("(%p, %p, %p, %p): no network associations\n", iface, tmpl, addr, out); *out = NULL; return E_NOTIMPL; }
+{ TRACE("(%p, %p, %p, %p): no network associations\n", iface, tmpl, addr, out); *out = NULL; return E_NOTIMPL; }
 
 static const ISecureDeviceAssocStaticsVtbl sd_vtbl =
 {

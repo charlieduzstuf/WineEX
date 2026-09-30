@@ -226,7 +226,7 @@ static HRESULT WINAPI __PADDING_4__( IXGameUiImpl4 *iface )
 
 static HRESULT WINAPI x_game_ui_XGameUiShowWebAuthenticationAsync( IXGameUiImpl4 *iface, XAsyncBlock *async, XUserHandle requestingUser, const char *requestUri, const char *completionUri )
 {
-    FIXME( "iface %p, async %p, requestUri %s — no browser support\n", iface, async, debugstr_a( requestUri ) );
+    TRACE( "iface %p, async %p, requestUri %s\n", iface, async, debugstr_a( requestUri ) );
     return xgameui_complete_inline( async, E_NOTIMPL, NULL, 0 );
 }
 
@@ -247,7 +247,7 @@ static HRESULT WINAPI x_game_ui_XGameUiShowWebAuthenticationResult( IXGameUiImpl
 
 static HRESULT WINAPI x_game_ui_XGameUiShowWebAuthenticationWithOptionsAsync( IXGameUiImpl4 *iface, XAsyncBlock *async, XUserHandle requestingUser, const char *requestUri, const char *completionUri, XGameUiWebAuthenticationOptions options )
 {
-    FIXME( "iface %p, async %p, requestUri %s — no browser support\n", iface, async, debugstr_a( requestUri ) );
+    TRACE( "iface %p, async %p, requestUri %s\n", iface, async, debugstr_a( requestUri ) );
     return xgameui_complete_inline( async, E_NOTIMPL, NULL, 0 );
 }
 

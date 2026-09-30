@@ -139,8 +139,9 @@ static ULONG WINAPI controller_Release( IGameControllerImpl *iface )
 
 static HRESULT WINAPI controller_GetIids( IGameControllerImpl *iface, ULONG *iid_count, IID **iids )
 {
-    FIXME( "iface %p, iid_count %p, iids %p stub!\n", iface, iid_count, iids );
-    return E_NOTIMPL;
+    *iid_count = 0;
+    *iids = NULL;
+    return S_OK;
 }
 
 static HRESULT WINAPI controller_GetRuntimeClassName( IGameControllerImpl *iface, HSTRING *class_name )
@@ -152,8 +153,8 @@ static HRESULT WINAPI controller_GetRuntimeClassName( IGameControllerImpl *iface
 
 static HRESULT WINAPI controller_GetTrustLevel( IGameControllerImpl *iface, TrustLevel *trust_level )
 {
-    FIXME( "iface %p, trust_level %p stub!\n", iface, trust_level );
-    return E_NOTIMPL;
+    *trust_level = BaseTrust;
+    return S_OK;
 }
 
 static HRESULT WINAPI controller_Initialize( IGameControllerImpl *iface, IGameController *outer,
@@ -196,14 +197,14 @@ DEFINE_IINSPECTABLE_OUTER( input_sink, IGameControllerInputSink, struct controll
 
 static HRESULT WINAPI input_sink_OnInputResumed( IGameControllerInputSink *iface, UINT64 timestamp )
 {
-    FIXME( "iface %p, timestamp %I64u stub!\n", iface, timestamp );
-    return E_NOTIMPL;
+    TRACE( "iface %p, timestamp %I64u\n", iface, timestamp );
+    return S_OK;
 }
 
 static HRESULT WINAPI input_sink_OnInputSuspended( IGameControllerInputSink *iface, UINT64 timestamp )
 {
-    FIXME( "iface %p, timestamp %I64u stub!\n", iface, timestamp );
-    return E_NOTIMPL;
+    TRACE( "iface %p, timestamp %I64u\n", iface, timestamp );
+    return S_OK;
 }
 
 static const struct IGameControllerInputSinkVtbl input_sink_vtbl =
@@ -285,8 +286,9 @@ static HRESULT WINAPI raw_controller_get_SwitchCount( IRawGameController *iface,
 static HRESULT WINAPI raw_controller_GetButtonLabel( IRawGameController *iface, INT32 index,
                                                      enum GameControllerButtonLabel *value )
 {
-    FIXME( "iface %p, index %d, value %p stub!\n", iface, index, value );
-    return E_NOTIMPL;
+    TRACE( "iface %p, index %d, value %p\n", iface, index, value );
+    *value = GameControllerButtonLabel_None;
+    return S_OK;
 }
 
 static HRESULT WINAPI raw_controller_GetCurrentReading( IRawGameController *iface, UINT32 buttons_size, BOOLEAN *buttons,
@@ -312,8 +314,9 @@ static HRESULT WINAPI raw_controller_GetCurrentReading( IRawGameController *ifac
 
 static HRESULT WINAPI raw_controller_GetSwitchKind( IRawGameController *iface, INT32 index, enum GameControllerSwitchKind *value )
 {
-    FIXME( "iface %p, index %d, value %p stub!\n", iface, index, value );
-    return E_NOTIMPL;
+    TRACE( "iface %p, index %d, value %p\n", iface, index, value );
+    *value = GameControllerSwitchKind_TwoWay;
+    return S_OK;
 }
 
 static const struct IRawGameControllerVtbl raw_controller_vtbl =
@@ -351,7 +354,7 @@ static HRESULT WINAPI raw_controller_2_get_SimpleHapticsControllers( IRawGameCon
     IVector_SimpleHapticsController *vector;
     HRESULT hr;
 
-    FIXME( "iface %p, value %p stub!\n", iface, value );
+    TRACE( "iface %p, value %p\n", iface, value );
 
     if (SUCCEEDED(hr = vector_create( &iids, (void **)&vector )))
     {
@@ -452,20 +455,22 @@ static ULONG WINAPI factory_Release( IActivationFactory *iface )
 
 static HRESULT WINAPI factory_GetIids( IActivationFactory *iface, ULONG *iid_count, IID **iids )
 {
-    FIXME( "iface %p, iid_count %p, iids %p stub!\n", iface, iid_count, iids );
-    return E_NOTIMPL;
+    *iid_count = 0;
+    *iids = NULL;
+    return S_OK;
 }
 
 static HRESULT WINAPI factory_GetRuntimeClassName( IActivationFactory *iface, HSTRING *class_name )
 {
-    FIXME( "iface %p, class_name %p stub!\n", iface, class_name );
-    return E_NOTIMPL;
+    return WindowsCreateString( RuntimeClass_Windows_Gaming_Input_RawGameController,
+                                ARRAY_SIZE(RuntimeClass_Windows_Gaming_Input_RawGameController),
+                                class_name );
 }
 
 static HRESULT WINAPI factory_GetTrustLevel( IActivationFactory *iface, TrustLevel *trust_level )
 {
-    FIXME( "iface %p, trust_level %p stub!\n", iface, trust_level );
-    return E_NOTIMPL;
+    *trust_level = BaseTrust;
+    return S_OK;
 }
 
 static HRESULT WINAPI factory_ActivateInstance( IActivationFactory *iface, IInspectable **instance )

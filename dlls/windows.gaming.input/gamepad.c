@@ -142,8 +142,9 @@ static ULONG WINAPI controller_Release( IGameControllerImpl *iface )
 
 static HRESULT WINAPI controller_GetIids( IGameControllerImpl *iface, ULONG *iid_count, IID **iids )
 {
-    FIXME( "iface %p, iid_count %p, iids %p stub!\n", iface, iid_count, iids );
-    return E_NOTIMPL;
+    *iid_count = 0;
+    *iids = NULL;
+    return S_OK;
 }
 
 static HRESULT WINAPI controller_GetRuntimeClassName( IGameControllerImpl *iface, HSTRING *class_name )
@@ -155,8 +156,8 @@ static HRESULT WINAPI controller_GetRuntimeClassName( IGameControllerImpl *iface
 
 static HRESULT WINAPI controller_GetTrustLevel( IGameControllerImpl *iface, TrustLevel *trust_level )
 {
-    FIXME( "iface %p, trust_level %p stub!\n", iface, trust_level );
-    return E_NOTIMPL;
+    *trust_level = BaseTrust;
+    return S_OK;
 }
 
 static HRESULT WINAPI controller_Initialize( IGameControllerImpl *iface, IGameController *outer,
@@ -203,14 +204,14 @@ DEFINE_IINSPECTABLE_OUTER( input_sink, IGameControllerInputSink, struct gamepad,
 
 static HRESULT WINAPI input_sink_OnInputResumed( IGameControllerInputSink *iface, UINT64 timestamp )
 {
-    FIXME( "iface %p, timestamp %I64u stub!\n", iface, timestamp );
-    return E_NOTIMPL;
+    TRACE( "iface %p, timestamp %I64u\n", iface, timestamp );
+    return S_OK;
 }
 
 static HRESULT WINAPI input_sink_OnInputSuspended( IGameControllerInputSink *iface, UINT64 timestamp )
 {
-    FIXME( "iface %p, timestamp %I64u stub!\n", iface, timestamp );
-    return E_NOTIMPL;
+    TRACE( "iface %p, timestamp %I64u\n", iface, timestamp );
+    return S_OK;
 }
 
 static const struct IGameControllerInputSinkVtbl input_sink_vtbl =
@@ -353,7 +354,7 @@ DEFINE_IINSPECTABLE_OUTER( gamepad2, IGamepad2, struct gamepad, IGameController_
 
 static HRESULT WINAPI gamepad2_GetButtonLabel( IGamepad2 *iface, GamepadButtons button, GameControllerButtonLabel *value )
 {
-    FIXME( "iface %p, button %#x, value %p stub!\n", iface, button, value );
+    TRACE( "iface %p, button %#x, value %p\n", iface, button, value );
     *value = GameControllerButtonLabel_None;
     return S_OK;
 }
@@ -441,20 +442,22 @@ static ULONG WINAPI factory_Release( IActivationFactory *iface )
 
 static HRESULT WINAPI factory_GetIids( IActivationFactory *iface, ULONG *iid_count, IID **iids )
 {
-    FIXME( "iface %p, iid_count %p, iids %p stub!\n", iface, iid_count, iids );
-    return E_NOTIMPL;
+    *iid_count = 0;
+    *iids = NULL;
+    return S_OK;
 }
 
 static HRESULT WINAPI factory_GetRuntimeClassName( IActivationFactory *iface, HSTRING *class_name )
 {
-    FIXME( "iface %p, class_name %p stub!\n", iface, class_name );
-    return E_NOTIMPL;
+    return WindowsCreateString( RuntimeClass_Windows_Gaming_Input_Gamepad,
+                                ARRAY_SIZE(RuntimeClass_Windows_Gaming_Input_Gamepad),
+                                class_name );
 }
 
 static HRESULT WINAPI factory_GetTrustLevel( IActivationFactory *iface, TrustLevel *trust_level )
 {
-    FIXME( "iface %p, trust_level %p stub!\n", iface, trust_level );
-    return E_NOTIMPL;
+    *trust_level = BaseTrust;
+    return S_OK;
 }
 
 static HRESULT WINAPI factory_ActivateInstance( IActivationFactory *iface, IInspectable **instance )

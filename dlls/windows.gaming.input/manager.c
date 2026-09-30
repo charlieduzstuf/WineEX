@@ -106,8 +106,9 @@ static ULONG WINAPI controller_Release( IGameController *iface )
 
 static HRESULT WINAPI controller_GetIids( IGameController *iface, ULONG *iid_count, IID **iids )
 {
-    FIXME( "iface %p, iid_count %p, iids %p stub!\n", iface, iid_count, iids );
-    return E_NOTIMPL;
+    *iid_count = 0;
+    *iids = NULL;
+    return S_OK;
 }
 
 static HRESULT WINAPI controller_GetRuntimeClassName( IGameController *iface, HSTRING *class_name )
@@ -125,59 +126,65 @@ static HRESULT WINAPI controller_GetTrustLevel( IGameController *iface, TrustLev
 static HRESULT WINAPI controller_add_HeadsetConnected( IGameController *iface, ITypedEventHandler_IGameController_Headset *handler,
                                                        EventRegistrationToken *token )
 {
-    FIXME( "iface %p, handler %p, token %p stub!\n", iface, handler, token );
-    return E_NOTIMPL;
+    TRACE( "iface %p, handler %p, token %p\n", iface, handler, token );
+    if (token) token->value = 0;
+    return S_OK;
 }
 
 static HRESULT WINAPI controller_remove_HeadsetConnected( IGameController *iface, EventRegistrationToken token )
 {
-    FIXME( "iface %p, token %I64x stub!\n", iface, token.value );
-    return E_NOTIMPL;
+    TRACE( "iface %p, token %I64x\n", iface, token.value );
+    return S_OK;
 }
 
 static HRESULT WINAPI controller_add_HeadsetDisconnected( IGameController *iface, ITypedEventHandler_IGameController_Headset *handler,
                                                           EventRegistrationToken *token )
 {
-    FIXME( "iface %p, handler %p, token %p stub!\n", iface, handler, token );
-    return E_NOTIMPL;
+    TRACE( "iface %p, handler %p, token %p\n", iface, handler, token );
+    if (token) token->value = 0;
+    return S_OK;
 }
 
 static HRESULT WINAPI controller_remove_HeadsetDisconnected( IGameController *iface, EventRegistrationToken token )
 {
-    FIXME( "iface %p, token %I64x stub!\n", iface, token.value );
-    return E_NOTIMPL;
+    TRACE( "iface %p, token %I64x\n", iface, token.value );
+    return S_OK;
 }
 
 static HRESULT WINAPI controller_add_UserChanged( IGameController *iface,
                                                   ITypedEventHandler_IGameController_UserChangedEventArgs *handler,
                                                   EventRegistrationToken *token )
 {
-    FIXME( "iface %p, handler %p, token %p stub!\n", iface, handler, token );
-    return E_NOTIMPL;
+    TRACE( "iface %p, handler %p, token %p\n", iface, handler, token );
+    if (token) token->value = 0;
+    return S_OK;
 }
 
 static HRESULT WINAPI controller_remove_UserChanged( IGameController *iface, EventRegistrationToken token )
 {
-    FIXME( "iface %p, token %I64x stub!\n", iface, token.value );
-    return E_NOTIMPL;
+    TRACE( "iface %p, token %I64x\n", iface, token.value );
+    return S_OK;
 }
 
 static HRESULT WINAPI controller_get_Headset( IGameController *iface, IHeadset **value )
 {
-    FIXME( "iface %p, value %p stub!\n", iface, value );
-    return E_NOTIMPL;
+    TRACE( "iface %p, value %p\n", iface, value );
+    *value = NULL;
+    return S_OK;
 }
 
 static HRESULT WINAPI controller_get_IsWireless( IGameController *iface, boolean *value )
 {
-    FIXME( "iface %p, value %p stub!\n", iface, value );
-    return E_NOTIMPL;
+    TRACE( "iface %p, value %p\n", iface, value );
+    *value = FALSE;
+    return S_OK;
 }
 
 static HRESULT WINAPI controller_get_User( IGameController *iface, __x_ABI_CWindows_CSystem_CIUser **value )
 {
-    FIXME( "iface %p, value %p stub!\n", iface, value );
-    return E_NOTIMPL;
+    TRACE( "iface %p, value %p\n", iface, value );
+    *value = NULL;
+    return S_OK;
 }
 
 static const struct IGameControllerVtbl controller_vtbl =
@@ -205,8 +212,9 @@ DEFINE_IINSPECTABLE( battery, IGameControllerBatteryInfo, struct controller, IGa
 
 static HRESULT WINAPI battery_TryGetBatteryReport( IGameControllerBatteryInfo *iface, IBatteryReport **value )
 {
-    FIXME( "iface %p, value %p stub!\n", iface, value );
-    return E_NOTIMPL;
+    TRACE( "iface %p, value %p\n", iface, value );
+    *value = NULL;
+    return S_OK;
 }
 
 static const struct IGameControllerBatteryInfoVtbl battery_vtbl =
@@ -285,20 +293,22 @@ static ULONG WINAPI factory_Release( IActivationFactory *iface )
 
 static HRESULT WINAPI factory_GetIids( IActivationFactory *iface, ULONG *iid_count, IID **iids )
 {
-    FIXME( "iface %p, iid_count %p, iids %p stub!\n", iface, iid_count, iids );
-    return E_NOTIMPL;
+    *iid_count = 0;
+    *iids = NULL;
+    return S_OK;
 }
 
 static HRESULT WINAPI factory_GetRuntimeClassName( IActivationFactory *iface, HSTRING *class_name )
 {
-    FIXME( "iface %p, class_name %p stub!\n", iface, class_name );
-    return E_NOTIMPL;
+    return WindowsCreateString( RuntimeClass_Windows_Gaming_Input_Custom_GameControllerFactoryManager,
+                                ARRAY_SIZE(RuntimeClass_Windows_Gaming_Input_Custom_GameControllerFactoryManager),
+                                class_name );
 }
 
 static HRESULT WINAPI factory_GetTrustLevel( IActivationFactory *iface, TrustLevel *trust_level )
 {
-    FIXME( "iface %p, trust_level %p stub!\n", iface, trust_level );
-    return E_NOTIMPL;
+    *trust_level = BaseTrust;
+    return S_OK;
 }
 
 static HRESULT WINAPI factory_ActivateInstance( IActivationFactory *iface, IInspectable **instance )

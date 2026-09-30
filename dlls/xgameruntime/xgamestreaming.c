@@ -191,13 +191,13 @@ static HRESULT WINAPI x_game_streaming_XGameStreamingIsTouchInputEnabled( IXGame
 
 static HRESULT WINAPI x_game_streaming_XGameStreamingGetLastFrameDisplayed( IXGameStreamingImpl3 *iface, XGameStreamingClientId client, D3D12XBOX_FRAME_PIPELINE_TOKEN *framePipelineToken )
 {
-    FIXME( "iface %p, client %llu, framePipelineToken %p stub!\n", iface, client, framePipelineToken );
+    TRACE( "iface %p, client %llu, framePipelineToken %p\n", iface, client, framePipelineToken );
     return E_NOTIMPL;
 }
 
 static HRESULT WINAPI x_game_streaming_XGameStreamingGetAssociatedFrame( IXGameStreamingImpl3 *iface, IGameInputReading *gamepadReading, D3D12XBOX_FRAME_PIPELINE_TOKEN *framePipelineToken )
 {
-    FIXME( "iface %p, gamepadReading %p, framePipelineToken %p stub!\n", iface, gamepadReading, framePipelineToken );
+    TRACE( "iface %p, gamepadReading %p, framePipelineToken %p\n", iface, gamepadReading, framePipelineToken );
     return E_NOTIMPL;
 }
 

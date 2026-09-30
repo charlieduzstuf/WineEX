@@ -84,20 +84,22 @@ static ULONG WINAPI factory_Release( IActivationFactory *iface )
 
 static HRESULT WINAPI factory_GetIids( IActivationFactory *iface, ULONG *iid_count, IID **iids )
 {
-    FIXME( "iface %p, iid_count %p, iids %p stub!\n", iface, iid_count, iids );
-    return E_NOTIMPL;
+    *iid_count = 0;
+    *iids = NULL;
+    return S_OK;
 }
 
 static HRESULT WINAPI factory_GetRuntimeClassName( IActivationFactory *iface, HSTRING *class_name )
 {
-    FIXME( "iface %p, class_name %p stub!\n", iface, class_name );
-    return E_NOTIMPL;
+    return WindowsCreateString( RuntimeClass_Windows_Gaming_UI_GameBar,
+                                ARRAY_SIZE(RuntimeClass_Windows_Gaming_UI_GameBar),
+                                class_name );
 }
 
 static HRESULT WINAPI factory_GetTrustLevel( IActivationFactory *iface, TrustLevel *trust_level )
 {
-    FIXME( "iface %p, trust_level %p stub!\n", iface, trust_level );
-    return E_NOTIMPL;
+    *trust_level = BaseTrust;
+    return S_OK;
 }
 
 static HRESULT WINAPI factory_ActivateInstance( IActivationFactory *iface, IInspectable **instance )
@@ -125,14 +127,14 @@ static HRESULT WINAPI statics_add_VisibilityChanged( IGameBarStatics *iface,
                                                      IEventHandler_IInspectable *handler,
                                                      EventRegistrationToken *token )
 {
-    FIXME( "iface %p, handler %p, token %p stub.\n", iface, handler, token );
+    TRACE( "iface %p, handler %p, token %p\n", iface, handler, token );
     *token = dummy_token;
     return S_OK;
 }
 
 static HRESULT WINAPI statics_remove_VisibilityChanged( IGameBarStatics *iface, EventRegistrationToken token )
 {
-    FIXME( "iface %p, token %#I64x stub.\n", iface, token.value );
+    TRACE( "iface %p, token %#I64x\n", iface, token.value );
     return S_OK;
 }
 
@@ -140,14 +142,14 @@ static HRESULT WINAPI statics_add_IsInputRedirectedChanged( IGameBarStatics *ifa
                                                             IEventHandler_IInspectable *handler,
                                                             EventRegistrationToken *token )
 {
-    FIXME( "iface %p, handler %p, token %p stub.\n", iface, handler, token );
+    TRACE( "iface %p, handler %p, token %p\n", iface, handler, token );
     *token = dummy_token;
     return S_OK;
 }
 
 static HRESULT WINAPI statics_remove_IsInputRedirectedChanged( IGameBarStatics *iface, EventRegistrationToken token )
 {
-    FIXME( "iface %p, token %#I64x stub.\n", iface, token.value );
+    TRACE( "iface %p, token %#I64x\n", iface, token.value );
     return S_OK;
 }
 

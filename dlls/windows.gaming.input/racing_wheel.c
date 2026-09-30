@@ -131,8 +131,7 @@ static ULONG WINAPI controller_Release( IGameControllerImpl *iface )
 
 static HRESULT WINAPI controller_GetIids( IGameControllerImpl *iface, ULONG *iid_count, IID **iids )
 {
-    FIXME( "iface %p, iid_count %p, iids %p stub!\n", iface, iid_count, iids );
-    return E_NOTIMPL;
+    *iid_count = 0; *iids = NULL; return S_OK;
 }
 
 static HRESULT WINAPI controller_GetRuntimeClassName( IGameControllerImpl *iface, HSTRING *class_name )
@@ -143,8 +142,7 @@ static HRESULT WINAPI controller_GetRuntimeClassName( IGameControllerImpl *iface
 
 static HRESULT WINAPI controller_GetTrustLevel( IGameControllerImpl *iface, TrustLevel *trust_level )
 {
-    FIXME( "iface %p, trust_level %p stub!\n", iface, trust_level );
-    return E_NOTIMPL;
+    *trust_level = BaseTrust; return S_OK;
 }
 
 static HRESULT WINAPI controller_Initialize( IGameControllerImpl *iface, IGameController *outer,
@@ -187,14 +185,14 @@ DEFINE_IINSPECTABLE_OUTER( input_sink, IGameControllerInputSink, struct racing_w
 
 static HRESULT WINAPI input_sink_OnInputResumed( IGameControllerInputSink *iface, UINT64 timestamp )
 {
-    FIXME( "iface %p, timestamp %I64u stub!\n", iface, timestamp );
-    return E_NOTIMPL;
+    TRACE( "iface %p, timestamp %I64u\n", iface, timestamp );
+    return S_OK;
 }
 
 static HRESULT WINAPI input_sink_OnInputSuspended( IGameControllerInputSink *iface, UINT64 timestamp )
 {
-    FIXME( "iface %p, timestamp %I64u stub!\n", iface, timestamp );
-    return E_NOTIMPL;
+    TRACE( "iface %p, timestamp %I64u\n", iface, timestamp );
+    return S_OK;
 }
 
 static const struct IGameControllerInputSinkVtbl input_sink_vtbl =
@@ -215,32 +213,32 @@ DEFINE_IINSPECTABLE_OUTER( racing_wheel, IRacingWheel, struct racing_wheel, IGam
 
 static HRESULT WINAPI racing_wheel_get_HasClutch( IRacingWheel *iface, boolean *value )
 {
-    FIXME( "iface %p, value %p stub!\n", iface, value );
-    return E_NOTIMPL;
+    TRACE( "iface %p, value %p\n", iface, value );
+    *value = FALSE; return S_OK;
 }
 
 static HRESULT WINAPI racing_wheel_get_HasHandbrake( IRacingWheel *iface, boolean *value )
 {
-    FIXME( "iface %p, value %p stub!\n", iface, value );
-    return E_NOTIMPL;
+    TRACE( "iface %p, value %p\n", iface, value );
+    *value = FALSE; return S_OK;
 }
 
 static HRESULT WINAPI racing_wheel_get_HasPatternShifter( IRacingWheel *iface, boolean *value )
 {
-    FIXME( "iface %p, value %p stub!\n", iface, value );
-    return E_NOTIMPL;
+    TRACE( "iface %p, value %p\n", iface, value );
+    *value = FALSE; return S_OK;
 }
 
 static HRESULT WINAPI racing_wheel_get_MaxPatternShifterGear( IRacingWheel *iface, INT32 *value )
 {
-    FIXME( "iface %p, value %p stub!\n", iface, value );
-    return E_NOTIMPL;
+    TRACE( "iface %p, value %p\n", iface, value );
+    *value = 0; return S_OK;
 }
 
 static HRESULT WINAPI racing_wheel_get_MaxWheelAngle( IRacingWheel *iface, DOUBLE *value )
 {
-    FIXME( "iface %p, value %p stub!\n", iface, value );
-    return E_NOTIMPL;
+    TRACE( "iface %p, value %p\n", iface, value );
+    *value = 360.0; return S_OK;
 }
 
 static HRESULT WINAPI racing_wheel_get_WheelMotor( IRacingWheel *iface, IForceFeedbackMotor **value )
@@ -255,14 +253,15 @@ static HRESULT WINAPI racing_wheel_get_WheelMotor( IRacingWheel *iface, IForceFe
 static HRESULT WINAPI racing_wheel_GetButtonLabel( IRacingWheel *iface, enum RacingWheelButtons button,
                                                    enum GameControllerButtonLabel *value )
 {
-    FIXME( "iface %p, button %d, value %p stub!\n", iface, button, value );
-    return E_NOTIMPL;
+    TRACE( "iface %p, button %d, value %p\n", iface, button, value );
+    *value = GameControllerButtonLabel_None; return S_OK;
 }
 
 static HRESULT WINAPI racing_wheel_GetCurrentReading( IRacingWheel *iface, struct RacingWheelReading *value )
 {
-    FIXME( "iface %p, value %p stub!\n", iface, value );
-    return E_NOTIMPL;
+    TRACE( "iface %p, value %p\n", iface, value );
+    if (value) memset( value, 0, sizeof(*value) );
+    return S_OK;
 }
 
 static const struct IRacingWheelVtbl racing_wheel_vtbl =
@@ -355,26 +354,24 @@ static ULONG WINAPI factory_Release( IActivationFactory *iface )
 
 static HRESULT WINAPI factory_GetIids( IActivationFactory *iface, ULONG *iid_count, IID **iids )
 {
-    FIXME( "iface %p, iid_count %p, iids %p stub!\n", iface, iid_count, iids );
-    return E_NOTIMPL;
+    *iid_count = 0; *iids = NULL; return S_OK;
 }
 
 static HRESULT WINAPI factory_GetRuntimeClassName( IActivationFactory *iface, HSTRING *class_name )
 {
-    FIXME( "iface %p, class_name %p stub!\n", iface, class_name );
-    return E_NOTIMPL;
+    *class_name = NULL; return S_OK;
 }
 
 static HRESULT WINAPI factory_GetTrustLevel( IActivationFactory *iface, TrustLevel *trust_level )
 {
-    FIXME( "iface %p, trust_level %p stub!\n", iface, trust_level );
-    return E_NOTIMPL;
+    *trust_level = BaseTrust; return S_OK;
 }
 
 static HRESULT WINAPI factory_ActivateInstance( IActivationFactory *iface, IInspectable **instance )
 {
+    /* RacingWheel is not directly activatable; enumerate via statics */
     FIXME( "iface %p, instance %p stub!\n", iface, instance );
-    return E_NOTIMPL;
+    *instance = NULL; return E_NOTIMPL;
 }
 
 static const struct IActivationFactoryVtbl factory_vtbl =

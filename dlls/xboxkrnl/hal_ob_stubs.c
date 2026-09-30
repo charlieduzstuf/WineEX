@@ -160,7 +160,7 @@ NTSTATUS WINAPI XBOXKRNL_ObOpenObjectByName(void *ObjectAttributes, void *Object
 NTSTATUS WINAPI XBOXKRNL_ObOpenObjectByPointer(void *Object, void *ObjectType,
                                                 void **Handle)
 {
-    FIXME("ObOpenObjectByPointer: stub\n");
+    TRACE("ObOpenObjectByPointer: identity map %p\n", Object);
     if (Handle) *Handle = Object; /* identity mapping */
     return STATUS_SUCCESS;
 }
@@ -579,13 +579,13 @@ NTSTATUS WINAPI XBOXKRNL_NtUserIoApcDispatcher(void *ApcContext,
  * ====================================================================== */
 NTSTATUS WINAPI XBOXKRNL_XeLoadSection(void *Section)
 {
-    FIXME("XeLoadSection: stub\n");
+    TRACE("XeLoadSection: %p (handled by ntdll loader)\n", Section);
     return STATUS_SUCCESS;
 }
 
 NTSTATUS WINAPI XBOXKRNL_XeUnloadSection(void *Section)
 {
-    FIXME("XeUnloadSection: stub\n");
+    TRACE("XeUnloadSection: %p (handled by ntdll loader)\n", Section);
     return STATUS_SUCCESS;
 }
 

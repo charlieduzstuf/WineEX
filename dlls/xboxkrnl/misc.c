@@ -168,7 +168,7 @@ void WINAPI XBOXKRNL_MmDeleteKernelStack(void *EndAddress, void *BaseAddress)
 /* MmQueryStatistics - return zeroed stats (no real pool tracking) */
 NTSTATUS WINAPI XBOXKRNL_MmQueryStatistics(void *MemoryStatistics)
 {
-    FIXME("ordinal 181 (MmQueryStatistics): returning zeros\n");
+    TRACE("ordinal 181 (MmQueryStatistics): returning zeros\n");
     if (MemoryStatistics) memset(MemoryStatistics, 0, 64);  /* struct is ~64 bytes */
     return STATUS_SUCCESS;
 }

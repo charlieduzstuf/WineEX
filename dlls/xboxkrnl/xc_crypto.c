@@ -264,7 +264,7 @@ LONG WINAPI XBOXKRNL_XcPKGetKeyLen(void *Key)
 
 LONG WINAPI XBOXKRNL_XcVerifyPKCS1Signature(void *Hash, void *PublicKey, void *Signature)
 {
-    FIXME("XcVerifyPKCS1Signature: returning success\n");
+    WARN("XcVerifyPKCS1Signature: skipping RSA verification, returning success\n");
     return 1; /* TRUE = verified */
 }
 

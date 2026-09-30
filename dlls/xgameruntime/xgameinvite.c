@@ -78,7 +78,7 @@ static HRESULT WINAPI x_game_invite_XGameInviteRegisterForEvent( IXGameInviteImp
 
 static BOOLEAN WINAPI x_game_invite_XGameInviteUnregisterForEvent( IXGameInviteImpl2 *iface, XTaskQueueRegistrationToken token, BOOLEAN wait )
 {
-    FIXME( "iface %p, token %p, wait %d stub!\n", iface, &token, wait );
+    TRACE( "iface %p, token %p, wait %d\n", iface, &token, wait );
     return TRUE;
 }
 

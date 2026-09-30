@@ -88,7 +88,7 @@ static HRESULT WINAPI x_threading_XAsyncGetResultSize( IXThreadingImpl *iface, X
 
 static void WINAPI x_threading_XAsyncCancel( IXThreadingImpl *iface, XAsyncBlock *asyncBlock )
 {
-    FIXME( "iface %p, asyncBlock %p stub — treating as no-op\n", iface, asyncBlock );
+    TRACE( "iface %p, asyncBlock %p\n", iface, asyncBlock );
 }
 
 static HRESULT WINAPI x_threading_XAsyncRun( IXThreadingImpl *iface, XAsyncBlock *asyncBlock, XAsyncWork *work )

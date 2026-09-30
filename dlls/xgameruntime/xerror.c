@@ -76,12 +76,12 @@ static HRESULT WINAPI __PADDING__( IXErrorImpl *iface )
 
 static void WINAPI x_error_XErrorSetCallback( IXErrorImpl *iface, XErrorCallback *callback, void *context )
 {
-    FIXME( "iface %p, callback %p, context %p stub!\n", iface, callback, context );
+    TRACE( "iface %p, callback %p, context %p\n", iface, callback, context );
 }
 
 static void WINAPI x_error_XErrorSetOptions( IXErrorImpl *iface, XErrorOptions optionsDebuggerPresent, XErrorOptions optionsDebuggerNotPresent )
 {
-    FIXME( "iface %p, optionsDebuggerPresent %#x, optionsDebuggerNotPresent %#x stub!\n", iface, optionsDebuggerPresent, optionsDebuggerNotPresent );
+    TRACE( "iface %p, optionsDebuggerPresent %#x, optionsDebuggerNotPresent %#x\n", iface, optionsDebuggerPresent, optionsDebuggerNotPresent );
 }
 
 static const struct IXErrorImplVtbl x_error_vtbl =

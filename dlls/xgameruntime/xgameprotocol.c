@@ -77,7 +77,7 @@ static HRESULT WINAPI x_game_protocol_XGameProtocolRegisterForActivation( IXGame
 
 static BOOLEAN WINAPI x_game_protocol_XGameProtocolUnregisterForActivation( IXGameProtocolImpl *iface, XTaskQueueRegistrationToken token, BOOLEAN wait )
 {
-    FIXME( "iface %p, token %p, wait %d stub!\n", iface, &token, wait );
+    TRACE( "iface %p, token %p, wait %d\n", iface, &token, wait );
     return TRUE;
 }
 

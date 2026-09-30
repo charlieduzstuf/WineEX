@@ -431,8 +431,9 @@ static ULONG WINAPI async_bool_Release( IAsyncOperation_boolean *iface )
 
 static HRESULT WINAPI async_bool_GetIids( IAsyncOperation_boolean *iface, ULONG *iid_count, IID **iids )
 {
-    FIXME( "iface %p, iid_count %p, iids %p stub!\n", iface, iid_count, iids );
-    return E_NOTIMPL;
+    *iid_count = 0;
+    *iids = NULL;
+    return S_OK;
 }
 
 static HRESULT WINAPI async_bool_GetRuntimeClassName( IAsyncOperation_boolean *iface, HSTRING *class_name )
@@ -444,8 +445,8 @@ static HRESULT WINAPI async_bool_GetRuntimeClassName( IAsyncOperation_boolean *i
 
 static HRESULT WINAPI async_bool_GetTrustLevel( IAsyncOperation_boolean *iface, TrustLevel *trust_level )
 {
-    FIXME( "iface %p, trust_level %p stub!\n", iface, trust_level );
-    return E_NOTIMPL;
+    *trust_level = BaseTrust;
+    return S_OK;
 }
 
 static HRESULT WINAPI async_bool_put_Completed( IAsyncOperation_boolean *iface, IAsyncOperationCompletedHandler_boolean *bool_handler )
@@ -576,8 +577,9 @@ static ULONG WINAPI async_result_Release( IAsyncOperation_ForceFeedbackLoadEffec
 
 static HRESULT WINAPI async_result_GetIids( IAsyncOperation_ForceFeedbackLoadEffectResult *iface, ULONG *iid_count, IID **iids )
 {
-    FIXME( "iface %p, iid_count %p, iids %p stub!\n", iface, iid_count, iids );
-    return E_NOTIMPL;
+    *iid_count = 0;
+    *iids = NULL;
+    return S_OK;
 }
 
 static HRESULT WINAPI async_result_GetRuntimeClassName( IAsyncOperation_ForceFeedbackLoadEffectResult *iface, HSTRING *class_name )
@@ -589,8 +591,8 @@ static HRESULT WINAPI async_result_GetRuntimeClassName( IAsyncOperation_ForceFee
 
 static HRESULT WINAPI async_result_GetTrustLevel( IAsyncOperation_ForceFeedbackLoadEffectResult *iface, TrustLevel *trust_level )
 {
-    FIXME( "iface %p, trust_level %p stub!\n", iface, trust_level );
-    return E_NOTIMPL;
+    *trust_level = BaseTrust;
+    return S_OK;
 }
 
 static HRESULT WINAPI async_result_put_Completed( IAsyncOperation_ForceFeedbackLoadEffectResult *iface, IAsyncOperationCompletedHandler_ForceFeedbackLoadEffectResult *handler )

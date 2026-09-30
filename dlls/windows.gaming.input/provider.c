@@ -125,26 +125,29 @@ static ULONG WINAPI wine_provider_Release( IWineGameControllerProvider *iface )
 
 static HRESULT WINAPI wine_provider_GetIids( IWineGameControllerProvider *iface, ULONG *iid_count, IID **iids )
 {
-    FIXME( "iface %p, iid_count %p, iids %p stub!\n", iface, iid_count, iids );
-    return E_NOTIMPL;
+    *iid_count = 0;
+    *iids = NULL;
+    return S_OK;
 }
 
 static HRESULT WINAPI wine_provider_GetRuntimeClassName( IWineGameControllerProvider *iface, HSTRING *class_name )
 {
-    FIXME( "iface %p, class_name %p stub!\n", iface, class_name );
-    return E_NOTIMPL;
+    return WindowsCreateString( L"Wine.Gaming.Input.WineGameControllerProvider",
+                                ARRAY_SIZE(L"Wine.Gaming.Input.WineGameControllerProvider"),
+                                class_name );
 }
 
 static HRESULT WINAPI wine_provider_GetTrustLevel( IWineGameControllerProvider *iface, TrustLevel *trust_level )
 {
-    FIXME( "iface %p, trust_level %p stub!\n", iface, trust_level );
-    return E_NOTIMPL;
+    *trust_level = BaseTrust;
+    return S_OK;
 }
 
 static HRESULT WINAPI wine_provider_get_NonRoamableId( IWineGameControllerProvider *iface, HSTRING *value )
 {
-    FIXME( "iface %p, value %p stub!\n", iface, value );
-    return E_NOTIMPL;
+    TRACE( "iface %p, value %p\n", iface, value );
+    *value = NULL;
+    return S_OK;
 }
 
 static HRESULT WINAPI wine_provider_get_DisplayName( IWineGameControllerProvider *iface, HSTRING *value )
@@ -390,8 +393,9 @@ DEFINE_IINSPECTABLE( game_provider, IGameControllerProvider, struct provider, IW
 
 static HRESULT WINAPI game_provider_get_FirmwareVersionInfo( IGameControllerProvider *iface, GameControllerVersionInfo *value )
 {
-    FIXME( "iface %p, value %p stub!\n", iface, value );
-    return E_NOTIMPL;
+    TRACE( "iface %p, value %p\n", iface, value );
+    memset( value, 0, sizeof(*value) );
+    return S_OK;
 }
 
 static HRESULT WINAPI game_provider_get_HardwareProductId( IGameControllerProvider *iface, UINT16 *value )
@@ -422,14 +426,16 @@ static HRESULT WINAPI game_provider_get_HardwareVendorId( IGameControllerProvide
 
 static HRESULT WINAPI game_provider_get_HardwareVersionInfo( IGameControllerProvider *iface, GameControllerVersionInfo *value )
 {
-    FIXME( "iface %p, value %p stub!\n", iface, value );
-    return E_NOTIMPL;
+    TRACE( "iface %p, value %p\n", iface, value );
+    memset( value, 0, sizeof(*value) );
+    return S_OK;
 }
 
 static HRESULT WINAPI game_provider_get_IsConnected( IGameControllerProvider *iface, boolean *value )
 {
-    FIXME( "iface %p, value %p stub!\n", iface, value );
-    return E_NOTIMPL;
+    TRACE( "iface %p, value %p\n", iface, value );
+    *value = TRUE;
+    return S_OK;
 }
 
 static const struct IGameControllerProviderVtbl game_provider_vtbl =

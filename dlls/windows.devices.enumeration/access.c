@@ -78,8 +78,7 @@ static ULONG WINAPI device_access_information_Release( IDeviceAccessInformation 
 
 static HRESULT WINAPI device_access_information_GetIids( IDeviceAccessInformation *iface, ULONG *iid_count, IID **iids )
 {
-    FIXME( "iface %p, iid_count %p, iids %p stub!\n", iface, iid_count, iids );
-    return E_NOTIMPL;
+    *iid_count = 0; *iids = NULL; return S_OK;
 }
 
 static HRESULT WINAPI device_access_information_GetRuntimeClassName( IDeviceAccessInformation *iface,
@@ -93,8 +92,7 @@ static HRESULT WINAPI device_access_information_GetRuntimeClassName( IDeviceAcce
 static HRESULT WINAPI device_access_information_GetTrustLevel( IDeviceAccessInformation *iface,
                                                                TrustLevel *trust_level )
 {
-    FIXME( "iface %p, trust_level %p stub!\n", iface, trust_level );
-    return E_NOTIMPL;
+    *trust_level = BaseTrust; return S_OK;
 }
 
 static HRESULT WINAPI device_access_information_add_AccessChanged(
@@ -103,7 +101,7 @@ static HRESULT WINAPI device_access_information_add_AccessChanged(
 {
     static EventRegistrationToken dummy_token = {.value = 0xdeadbeef};
 
-    FIXME( "iface %p, handler %p, cookie %p stub.\n", iface, handler, cookie);
+    TRACE( "iface %p, handler %p, cookie %p\n", iface, handler, cookie);
 
     *cookie = dummy_token;
     return S_OK;
@@ -112,7 +110,7 @@ static HRESULT WINAPI device_access_information_add_AccessChanged(
 static HRESULT WINAPI device_access_information_remove_AccessChanged( IDeviceAccessInformation *iface,
                                                                       EventRegistrationToken cookie )
 {
-    FIXME( "iface %p, cookie %#I64x stub.\n", iface, cookie.value);
+    TRACE( "iface %p, cookie %#I64x\n", iface, cookie.value);
 
     return S_OK;
 }
@@ -120,7 +118,7 @@ static HRESULT WINAPI device_access_information_remove_AccessChanged( IDeviceAcc
 static HRESULT WINAPI device_access_information_CurrentStatus( IDeviceAccessInformation *iface,
                                                                enum DeviceAccessStatus *status )
 {
-    FIXME( "iface %p, status %p stub.\n", iface, status );
+    TRACE( "iface %p, status %p\n", iface, status );
 
     *status = DeviceAccessStatus_Allowed;
     return S_OK;
@@ -209,20 +207,17 @@ static ULONG WINAPI factory_Release( IActivationFactory *iface )
 
 static HRESULT WINAPI factory_GetIids( IActivationFactory *iface, ULONG *iid_count, IID **iids )
 {
-    FIXME( "iface %p, iid_count %p, iids %p stub!\n", iface, iid_count, iids );
-    return E_NOTIMPL;
+    *iid_count = 0; *iids = NULL; return S_OK;
 }
 
 static HRESULT WINAPI factory_GetRuntimeClassName( IActivationFactory *iface, HSTRING *class_name )
 {
-    FIXME( "iface %p, class_name %p stub!\n", iface, class_name );
-    return E_NOTIMPL;
+    *class_name = NULL; return S_OK;
 }
 
 static HRESULT WINAPI factory_GetTrustLevel( IActivationFactory *iface, TrustLevel *trust_level )
 {
-    FIXME( "iface %p, trust_level %p stub!\n", iface, trust_level );
-    return E_NOTIMPL;
+    *trust_level = BaseTrust; return S_OK;
 }
 
 static HRESULT WINAPI factory_ActivateInstance( IActivationFactory *iface, IInspectable **instance )
@@ -249,7 +244,7 @@ DEFINE_IINSPECTABLE( statics, IDeviceAccessInformationStatics, struct device_acc
 static HRESULT WINAPI statics_CreateFromId( IDeviceAccessInformationStatics *iface,
                                             HSTRING device_id, IDeviceAccessInformation **value)
 {
-    FIXME( "device_id %s, value %p stub.\n", debugstr_hstring( device_id ), value );
+    TRACE( "device_id %s, value %p\n", debugstr_hstring( device_id ), value );
 
     return device_access_information_create( value );
 }
@@ -257,7 +252,7 @@ static HRESULT WINAPI statics_CreateFromId( IDeviceAccessInformationStatics *ifa
 static HRESULT WINAPI statics_CreateFromDeviceClassId( IDeviceAccessInformationStatics *iface,
                                                        GUID device_class_id, IDeviceAccessInformation **value)
 {
-    FIXME( "device_class_id %s, value %p stub.\n", debugstr_guid( &device_class_id ), value );
+    TRACE( "device_class_id %s, value %p\n", debugstr_guid( &device_class_id ), value );
 
     return device_access_information_create( value );
 }
@@ -265,7 +260,7 @@ static HRESULT WINAPI statics_CreateFromDeviceClassId( IDeviceAccessInformationS
 static HRESULT WINAPI statics_CreateFromDeviceClass( IDeviceAccessInformationStatics *iface,
                                                      enum DeviceClass device_class, IDeviceAccessInformation **value)
 {
-    FIXME( "device_class %d, value %p stub.\n", device_class, value );
+    TRACE( "device_class %d, value %p\n", device_class, value );
 
     return device_access_information_create( value );
 }

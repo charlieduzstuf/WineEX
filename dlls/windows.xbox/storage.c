@@ -376,6 +376,209 @@ static HRESULT async_op_create(IInspectable *result, async_op **out)
 }
 
 /* ======================================================================
+ * IMapView<HSTRING,IBuffer> / IKeyValuePair<HSTRING,IBuffer> helpers
+ *
+ * We need these parameterized COM types to iterate save-game blobs.
+ * GUIDs computed via the WinRT pinterface SHA-1 algorithm (ECMA-334).
+ * ====================================================================== */
+
+/* IBuffer (Windows.Storage.Streams.IBuffer) — slots we use */
+typedef struct IBuffer_local IBuffer_local;
+typedef struct IBuffer_local_Vtbl {
+    HRESULT (STDMETHODCALLTYPE *QueryInterface)(IBuffer_local*, REFIID, void**);
+    ULONG   (STDMETHODCALLTYPE *AddRef)(IBuffer_local*);
+    ULONG   (STDMETHODCALLTYPE *Release)(IBuffer_local*);
+    HRESULT (STDMETHODCALLTYPE *GetIids)(IBuffer_local*, ULONG*, IID**);
+    HRESULT (STDMETHODCALLTYPE *GetRuntimeClassName)(IBuffer_local*, HSTRING*);
+    HRESULT (STDMETHODCALLTYPE *GetTrustLevel)(IBuffer_local*, TrustLevel*);
+    HRESULT (STDMETHODCALLTYPE *get_Capacity)(IBuffer_local*, UINT32*);
+    HRESULT (STDMETHODCALLTYPE *get_Length)(IBuffer_local*, UINT32*);
+    HRESULT (STDMETHODCALLTYPE *put_Length)(IBuffer_local*, UINT32);
+} IBuffer_local_Vtbl;
+struct IBuffer_local { CONST_VTBL IBuffer_local_Vtbl *lpVtbl; };
+
+static const GUID IID_IBuffer_local =
+    {0x905a0fe0,0xbc53,0x11df,{0x8c,0x49,0x00,0x1e,0x4f,0xc6,0x86,0xda}};
+static const GUID IID_IBufferByteAccess =
+    {0x905a0fef,0xbc53,0x11df,{0x8c,0x49,0x00,0x1e,0x4f,0xc6,0x86,0xda}};
+
+/* IBufferByteAccess */
+typedef struct IBufferByteAccess_local IBufferByteAccess_local;
+typedef struct {
+    HRESULT (STDMETHODCALLTYPE *QueryInterface)(IBufferByteAccess_local*, REFIID, void**);
+    ULONG   (STDMETHODCALLTYPE *AddRef)(IBufferByteAccess_local*);
+    ULONG   (STDMETHODCALLTYPE *Release)(IBufferByteAccess_local*);
+    HRESULT (STDMETHODCALLTYPE *Buffer)(IBufferByteAccess_local*, BYTE**);
+} IBufferByteAccess_Vtbl;
+struct IBufferByteAccess_local { CONST_VTBL IBufferByteAccess_Vtbl *lpVtbl; };
+
+/* IKeyValuePair<HSTRING,IBuffer> */
+typedef struct IKvp_HStr_IBuf IKvp_HStr_IBuf;
+typedef struct {
+    HRESULT (STDMETHODCALLTYPE *QueryInterface)(IKvp_HStr_IBuf*, REFIID, void**);
+    ULONG   (STDMETHODCALLTYPE *AddRef)(IKvp_HStr_IBuf*);
+    ULONG   (STDMETHODCALLTYPE *Release)(IKvp_HStr_IBuf*);
+    HRESULT (STDMETHODCALLTYPE *GetIids)(IKvp_HStr_IBuf*, ULONG*, IID**);
+    HRESULT (STDMETHODCALLTYPE *GetRuntimeClassName)(IKvp_HStr_IBuf*, HSTRING*);
+    HRESULT (STDMETHODCALLTYPE *GetTrustLevel)(IKvp_HStr_IBuf*, TrustLevel*);
+    HRESULT (STDMETHODCALLTYPE *get_Key)(IKvp_HStr_IBuf*, HSTRING*);
+    HRESULT (STDMETHODCALLTYPE *get_Value)(IKvp_HStr_IBuf*, IBuffer_local**);
+} IKvp_HStr_IBuf_Vtbl;
+struct IKvp_HStr_IBuf { CONST_VTBL IKvp_HStr_IBuf_Vtbl *lpVtbl; };
+static const GUID IID_IKvp_HStr_IBuf =
+    {0x9114f794,0x2ceb,0x5b03,{0x9b,0x22,0x36,0x88,0x4e,0x1f,0x58,0xb3}};
+
+/* IIterator<IKeyValuePair<HSTRING,IBuffer>> */
+typedef struct IIter_Kvp_HStr_IBuf IIter_Kvp_HStr_IBuf;
+typedef struct {
+    HRESULT (STDMETHODCALLTYPE *QueryInterface)(IIter_Kvp_HStr_IBuf*, REFIID, void**);
+    ULONG   (STDMETHODCALLTYPE *AddRef)(IIter_Kvp_HStr_IBuf*);
+    ULONG   (STDMETHODCALLTYPE *Release)(IIter_Kvp_HStr_IBuf*);
+    HRESULT (STDMETHODCALLTYPE *GetIids)(IIter_Kvp_HStr_IBuf*, ULONG*, IID**);
+    HRESULT (STDMETHODCALLTYPE *GetRuntimeClassName)(IIter_Kvp_HStr_IBuf*, HSTRING*);
+    HRESULT (STDMETHODCALLTYPE *GetTrustLevel)(IIter_Kvp_HStr_IBuf*, TrustLevel*);
+    HRESULT (STDMETHODCALLTYPE *get_Current)(IIter_Kvp_HStr_IBuf*, IKvp_HStr_IBuf**);
+    HRESULT (STDMETHODCALLTYPE *get_HasCurrent)(IIter_Kvp_HStr_IBuf*, boolean*);
+    HRESULT (STDMETHODCALLTYPE *MoveNext)(IIter_Kvp_HStr_IBuf*, boolean*);
+    HRESULT (STDMETHODCALLTYPE *GetMany)(IIter_Kvp_HStr_IBuf*, UINT32, IKvp_HStr_IBuf**, UINT32*);
+} IIter_Kvp_HStr_IBuf_Vtbl;
+struct IIter_Kvp_HStr_IBuf { CONST_VTBL IIter_Kvp_HStr_IBuf_Vtbl *lpVtbl; };
+
+/* IIterable<IKeyValuePair<HSTRING,IBuffer>> */
+typedef struct IItble_Kvp_HStr_IBuf IItble_Kvp_HStr_IBuf;
+typedef struct {
+    HRESULT (STDMETHODCALLTYPE *QueryInterface)(IItble_Kvp_HStr_IBuf*, REFIID, void**);
+    ULONG   (STDMETHODCALLTYPE *AddRef)(IItble_Kvp_HStr_IBuf*);
+    ULONG   (STDMETHODCALLTYPE *Release)(IItble_Kvp_HStr_IBuf*);
+    HRESULT (STDMETHODCALLTYPE *GetIids)(IItble_Kvp_HStr_IBuf*, ULONG*, IID**);
+    HRESULT (STDMETHODCALLTYPE *GetRuntimeClassName)(IItble_Kvp_HStr_IBuf*, HSTRING*);
+    HRESULT (STDMETHODCALLTYPE *GetTrustLevel)(IItble_Kvp_HStr_IBuf*, TrustLevel*);
+    HRESULT (STDMETHODCALLTYPE *First)(IItble_Kvp_HStr_IBuf*, IIter_Kvp_HStr_IBuf**);
+} IItble_Kvp_HStr_IBuf_Vtbl;
+struct IItble_Kvp_HStr_IBuf { CONST_VTBL IItble_Kvp_HStr_IBuf_Vtbl *lpVtbl; };
+static const GUID IID_IItble_Kvp_HStr_IBuf =
+    {0x3c9ffa92,0x5123,0x5ac4,{0xb1,0x11,0x03,0xc2,0x15,0xf0,0xc5,0x1c}};
+
+/* Helper: iterate IMapView<HSTRING,IBuffer> and write each blob to disk */
+static HRESULT write_blobs_from_mapview(const WCHAR *container_path, void *mapview)
+{
+    IItble_Kvp_HStr_IBuf *iterable = NULL;
+    IIter_Kvp_HStr_IBuf  *iter = NULL;
+    boolean has;
+    HRESULT hr;
+
+    hr = IUnknown_QueryInterface((IUnknown *)mapview,
+                                  &IID_IItble_Kvp_HStr_IBuf, (void **)&iterable);
+    if (FAILED(hr)) return hr;
+
+    hr = iterable->lpVtbl->First(iterable, &iter);
+    iterable->lpVtbl->Release(iterable);
+    if (FAILED(hr)) return hr;
+
+    iter->lpVtbl->get_HasCurrent(iter, &has);
+    while (has)
+    {
+        IKvp_HStr_IBuf       *pair = NULL;
+        HSTRING               key  = NULL;
+        IBuffer_local        *buf  = NULL;
+        IBufferByteAccess_local *ba = NULL;
+        BYTE                 *ptr  = NULL;
+        UINT32                len  = 0;
+        WCHAR                 path[MAX_PATH];
+        HANDLE                hf;
+        DWORD                 written;
+
+        if (FAILED(iter->lpVtbl->get_Current(iter, &pair))) goto next;
+        if (FAILED(pair->lpVtbl->get_Key(pair, &key)))       goto rel_pair;
+        if (FAILED(pair->lpVtbl->get_Value(pair, &buf)))      goto rel_key;
+        if (FAILED(buf->lpVtbl->get_Length(buf, &len)))       goto rel_buf;
+        if (FAILED(IUnknown_QueryInterface((IUnknown *)buf, &IID_IBufferByteAccess, (void **)&ba)))
+            goto rel_buf;
+        if (FAILED(ba->lpVtbl->Buffer(ba, &ptr)))              goto rel_ba;
+
+        lstrcpyW(path, container_path);
+        lstrcatW(path, L"\\");
+        lstrcatW(path, WindowsGetStringRawBuffer(key, NULL));
+
+        hf = CreateFileW(path, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
+        if (hf != INVALID_HANDLE_VALUE)
+        {
+            WriteFile(hf, ptr, len, &written, NULL);
+            CloseHandle(hf);
+        }
+
+    rel_ba:  ba->lpVtbl->Release(ba);
+    rel_buf: buf->lpVtbl->Release(buf);
+    rel_key: WindowsDeleteString(key);
+    rel_pair: pair->lpVtbl->Release(pair);
+    next:
+        iter->lpVtbl->MoveNext(iter, &has);
+    }
+    iter->lpVtbl->Release(iter);
+    return S_OK;
+}
+
+/* Helper: iterate IMapView<HSTRING,IBuffer> and read each blob from disk into the buffer */
+static HRESULT read_blobs_into_mapview(const WCHAR *container_path, void *mapview)
+{
+    IItble_Kvp_HStr_IBuf *iterable = NULL;
+    IIter_Kvp_HStr_IBuf  *iter = NULL;
+    boolean has;
+    HRESULT hr;
+
+    hr = IUnknown_QueryInterface((IUnknown *)mapview,
+                                  &IID_IItble_Kvp_HStr_IBuf, (void **)&iterable);
+    if (FAILED(hr)) return hr;
+
+    hr = iterable->lpVtbl->First(iterable, &iter);
+    iterable->lpVtbl->Release(iterable);
+    if (FAILED(hr)) return hr;
+
+    iter->lpVtbl->get_HasCurrent(iter, &has);
+    while (has)
+    {
+        IKvp_HStr_IBuf       *pair = NULL;
+        HSTRING               key  = NULL;
+        IBuffer_local        *buf  = NULL;
+        IBufferByteAccess_local *ba = NULL;
+        BYTE                 *ptr  = NULL;
+        UINT32                cap  = 0;
+        WCHAR                 path[MAX_PATH];
+        HANDLE                hf;
+        DWORD                 bytes_read;
+
+        if (FAILED(iter->lpVtbl->get_Current(iter, &pair))) goto next;
+        if (FAILED(pair->lpVtbl->get_Key(pair, &key)))       goto rel_pair;
+        if (FAILED(pair->lpVtbl->get_Value(pair, &buf)))      goto rel_key;
+        if (FAILED(buf->lpVtbl->get_Capacity(buf, &cap)))     goto rel_buf;
+        if (FAILED(IUnknown_QueryInterface((IUnknown *)buf, &IID_IBufferByteAccess, (void **)&ba)))
+            goto rel_buf;
+        if (FAILED(ba->lpVtbl->Buffer(ba, &ptr)))              goto rel_ba;
+
+        lstrcpyW(path, container_path);
+        lstrcatW(path, L"\\");
+        lstrcatW(path, WindowsGetStringRawBuffer(key, NULL));
+
+        hf = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+        if (hf != INVALID_HANDLE_VALUE)
+        {
+            if (ReadFile(hf, ptr, cap, &bytes_read, NULL))
+                buf->lpVtbl->put_Length(buf, bytes_read);
+            CloseHandle(hf);
+        }
+
+    rel_ba:  ba->lpVtbl->Release(ba);
+    rel_buf: buf->lpVtbl->Release(buf);
+    rel_key: WindowsDeleteString(key);
+    rel_pair: pair->lpVtbl->Release(pair);
+    next:
+        iter->lpVtbl->MoveNext(iter, &has);
+    }
+    iter->lpVtbl->Release(iter);
+    return S_OK;
+}
+
+/* ======================================================================
  * IConnectedStorageContainer
  * ====================================================================== */
 typedef struct IConnectedStorageContainerVtbl {
@@ -483,10 +686,12 @@ static HRESULT STDMETHODCALLTYPE container_SubmitUpdatesAsync(IConnectedStorageC
         }
     }
 
-    /* updates is IMapView<HSTRING, IBuffer> — iterating requires parameterised IID;
-     * log FIXME only when non-NULL so games that pass NULL updates don't spam. */
+    /* Write blobs from IMapView<HSTRING,IBuffer> updates */
     if (updates)
-        FIXME("(%p): updates IMapView<HSTRING,IBuffer> iteration not yet implemented\n", iface);
+    {
+        SHCreateDirectoryExW(NULL, impl->path, NULL);
+        write_blobs_from_mapview(impl->path, updates);
+    }
 
     hr = async_op_create(NULL, &op);
     if (SUCCEEDED(hr)) *out = op;
@@ -496,10 +701,15 @@ static HRESULT STDMETHODCALLTYPE container_SubmitUpdatesAsync(IConnectedStorageC
 static HRESULT STDMETHODCALLTYPE container_ReadAsync(IConnectedStorageContainer *iface,
     void *reads, void **out)
 {
+    struct container_obj *impl = impl_from_container(iface);
     async_op *op;
     HRESULT hr;
-    /* reads is IMapView<HSTRING,IBuffer> — filling IBuffer requires parameterised IID */
-    FIXME("(%p, %p, %p): reads IMapView<HSTRING,IBuffer> not yet implemented\n", iface, reads, out);
+
+    TRACE("(%p, %p, %p)\n", iface, reads, out);
+
+    if (reads)
+        read_blobs_into_mapview(impl->path, reads);
+
     hr = async_op_create(NULL, &op);
     if (SUCCEEDED(hr)) *out = op;
     return hr;

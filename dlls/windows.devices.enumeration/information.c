@@ -84,8 +84,7 @@ static ULONG WINAPI device_information_Release( IDeviceInformation *iface )
 
 static HRESULT WINAPI device_information_GetIids( IDeviceInformation *iface, ULONG *iid_count, IID **iids )
 {
-    FIXME( "iface %p, iid_count %p, iids %p stub!\n", iface, iid_count, iids );
-    return E_NOTIMPL;
+    *iid_count = 0; *iids = NULL; return S_OK;
 }
 
 static HRESULT WINAPI device_information_GetRuntimeClassName( IDeviceInformation *iface, HSTRING *class_name )
@@ -97,8 +96,7 @@ static HRESULT WINAPI device_information_GetRuntimeClassName( IDeviceInformation
 
 static HRESULT WINAPI device_information_GetTrustLevel( IDeviceInformation *iface, TrustLevel *trust_level )
 {
-    FIXME( "iface %p, trust_level %p stub!\n", iface, trust_level );
-    return E_NOTIMPL;
+    *trust_level = BaseTrust; return S_OK;
 }
 
 static HRESULT WINAPI device_information_get_Id( IDeviceInformation *iface, HSTRING *id )

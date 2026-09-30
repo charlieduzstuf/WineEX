@@ -191,20 +191,19 @@ static ULONG WINAPI device_watcher_Release( IDeviceWatcher *iface )
 
 static HRESULT WINAPI device_watcher_GetIids( IDeviceWatcher *iface, ULONG *iid_count, IID **iids )
 {
-    FIXME( "iface %p, iid_count %p, iids %p stub!\n", iface, iid_count, iids );
-    return E_NOTIMPL;
+    *iid_count = 0; *iids = NULL; return S_OK;
 }
 
 static HRESULT WINAPI device_watcher_GetRuntimeClassName( IDeviceWatcher *iface, HSTRING *class_name )
 {
-    FIXME( "iface %p, class_name %p stub!\n", iface, class_name );
-    return E_NOTIMPL;
+    const static WCHAR *name = RuntimeClass_Windows_Devices_Enumeration_DeviceWatcher;
+    TRACE( "iface %p, class_name %p\n", iface, class_name );
+    return WindowsCreateString( name, wcslen( name ), class_name );
 }
 
 static HRESULT WINAPI device_watcher_GetTrustLevel( IDeviceWatcher *iface, TrustLevel *trust_level )
 {
-    FIXME( "iface %p, trust_level %p stub!\n", iface, trust_level );
-    return E_NOTIMPL;
+    *trust_level = BaseTrust; return S_OK;
 }
 
 static HRESULT WINAPI device_watcher_add_Added( IDeviceWatcher *iface, ITypedEventHandler_DeviceWatcher_DeviceInformation *handler,
@@ -225,27 +224,27 @@ static HRESULT WINAPI device_watcher_remove_Added( IDeviceWatcher *iface, EventR
 static HRESULT WINAPI device_watcher_add_Updated( IDeviceWatcher *iface, ITypedEventHandler_DeviceWatcher_DeviceInformationUpdate *handler,
                                                   EventRegistrationToken *token )
 {
-    FIXME( "iface %p, handler %p, token %p stub!\n", iface, handler, token );
+    TRACE( "iface %p, handler %p, token %p stub!\n", iface, handler, token );
     return S_OK;
 }
 
 static HRESULT WINAPI device_watcher_remove_Updated( IDeviceWatcher *iface, EventRegistrationToken token )
 {
-    FIXME( "iface %p, token %#I64x stub!\n", iface, token.value );
-    return E_NOTIMPL;
+    TRACE( "iface %p, token %#I64x stub!\n", iface, token.value );
+    return S_OK;
 }
 
 static HRESULT WINAPI device_watcher_add_Removed( IDeviceWatcher *iface, ITypedEventHandler_DeviceWatcher_DeviceInformationUpdate *handler,
                                                   EventRegistrationToken *token )
 {
-    FIXME( "iface %p, handler %p, token %p stub!\n", iface, handler, token );
-    return E_NOTIMPL;
+    TRACE( "iface %p, handler %p, token %p stub!\n", iface, handler, token );
+    return S_OK;
 }
 
 static HRESULT WINAPI device_watcher_remove_Removed( IDeviceWatcher *iface, EventRegistrationToken token )
 {
-    FIXME( "iface %p, token %#I64x stub!\n", iface, token.value );
-    return E_NOTIMPL;
+    TRACE( "iface %p, token %#I64x stub!\n", iface, token.value );
+    return S_OK;
 }
 
 static HRESULT WINAPI device_watcher_add_EnumerationCompleted( IDeviceWatcher *iface, ITypedEventHandler_DeviceWatcher_IInspectable *handler,
@@ -673,20 +672,17 @@ static ULONG WINAPI activation_factory_Release( IActivationFactory *iface )
 
 static HRESULT WINAPI activation_factory_GetIids( IActivationFactory *iface, ULONG *iid_count, IID **iids )
 {
-    FIXME( "iface %p, iid_count %p, iids %p stub!\n", iface, iid_count, iids );
-    return E_NOTIMPL;
+    *iid_count = 0; *iids = NULL; return S_OK;
 }
 
 static HRESULT WINAPI activation_factory_GetRuntimeClassName( IActivationFactory *iface, HSTRING *class_name )
 {
-    FIXME( "iface %p, class_name %p stub!\n", iface, class_name );
-    return E_NOTIMPL;
+    *class_name = NULL; return S_OK;
 }
 
 static HRESULT WINAPI activation_factory_GetTrustLevel( IActivationFactory *iface, TrustLevel *trust_level )
 {
-    FIXME( "iface %p, trust_level %p stub!\n", iface, trust_level );
-    return E_NOTIMPL;
+    *trust_level = BaseTrust; return S_OK;
 }
 
 static HRESULT WINAPI activation_factory_ActivateInstance( IActivationFactory *iface, IInspectable **instance )

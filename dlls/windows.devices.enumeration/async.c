@@ -432,8 +432,7 @@ static ULONG WINAPI async_inspectable_Release( IAsyncOperation_IInspectable *ifa
 
 static HRESULT WINAPI async_inspectable_GetIids( IAsyncOperation_IInspectable *iface, ULONG *iid_count, IID **iids )
 {
-    FIXME( "iface %p, iid_count %p, iids %p stub!\n", iface, iid_count, iids );
-    return E_NOTIMPL;
+    *iid_count = 0; *iids = NULL; return S_OK;
 }
 
 static HRESULT WINAPI async_inspectable_GetRuntimeClassName( IAsyncOperation_IInspectable *iface, HSTRING *class_name )
@@ -445,8 +444,7 @@ static HRESULT WINAPI async_inspectable_GetRuntimeClassName( IAsyncOperation_IIn
 
 static HRESULT WINAPI async_inspectable_GetTrustLevel( IAsyncOperation_IInspectable *iface, TrustLevel *trust_level )
 {
-    FIXME( "iface %p, trust_level %p stub!\n", iface, trust_level );
-    return E_NOTIMPL;
+    *trust_level = BaseTrust; return S_OK;
 }
 
 static HRESULT WINAPI async_inspectable_put_Completed( IAsyncOperation_IInspectable *iface, IAsyncOperationCompletedHandler_IInspectable *bool_handler )
@@ -580,8 +578,7 @@ static ULONG WINAPI async_action_Release( IAsyncAction *iface )
 
 static HRESULT WINAPI async_action_GetIids( IAsyncAction *iface, ULONG *iid_count, IID **iids )
 {
-    FIXME( "iface %p, iid_count %p, iids %p stub!\n", iface, iid_count, iids );
-    return E_NOTIMPL;
+    *iid_count = 0; *iids = NULL; return S_OK;
 }
 
 static HRESULT WINAPI async_action_GetRuntimeClassName( IAsyncAction *iface, HSTRING *class_name )
@@ -593,8 +590,7 @@ static HRESULT WINAPI async_action_GetRuntimeClassName( IAsyncAction *iface, HST
 
 static HRESULT WINAPI async_action_GetTrustLevel( IAsyncAction *iface, TrustLevel *trust_level )
 {
-    FIXME( "iface %p, trust_level %p stub!\n", iface, trust_level );
-    return E_NOTIMPL;
+    *trust_level = BaseTrust; return S_OK;
 }
 
 static HRESULT WINAPI async_action_put_Completed( IAsyncAction *iface, IAsyncActionCompletedHandler *bool_handler )

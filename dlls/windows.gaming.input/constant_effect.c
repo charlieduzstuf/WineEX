@@ -80,8 +80,9 @@ static ULONG WINAPI effect_Release( IConstantForceEffect *iface )
 
 static HRESULT WINAPI effect_GetIids( IConstantForceEffect *iface, ULONG *iid_count, IID **iids )
 {
-    FIXME( "iface %p, iid_count %p, iids %p stub!\n", iface, iid_count, iids );
-    return E_NOTIMPL;
+    *iid_count = 0;
+    *iids = NULL;
+    return S_OK;
 }
 
 static HRESULT WINAPI effect_GetRuntimeClassName( IConstantForceEffect *iface, HSTRING *class_name )
@@ -93,8 +94,8 @@ static HRESULT WINAPI effect_GetRuntimeClassName( IConstantForceEffect *iface, H
 
 static HRESULT WINAPI effect_GetTrustLevel( IConstantForceEffect *iface, TrustLevel *trust_level )
 {
-    FIXME( "iface %p, trust_level %p stub!\n", iface, trust_level );
-    return E_NOTIMPL;
+    *trust_level = BaseTrust;
+    return S_OK;
 }
 
 static HRESULT WINAPI effect_SetParameters( IConstantForceEffect *iface, Vector3 direction, TimeSpan duration )
@@ -214,20 +215,22 @@ static ULONG WINAPI activation_Release( IActivationFactory *iface )
 
 static HRESULT WINAPI activation_GetIids( IActivationFactory *iface, ULONG *iid_count, IID **iids )
 {
-    FIXME( "iface %p, iid_count %p, iids %p stub!\n", iface, iid_count, iids );
-    return E_NOTIMPL;
+    *iid_count = 0;
+    *iids = NULL;
+    return S_OK;
 }
 
 static HRESULT WINAPI activation_GetRuntimeClassName( IActivationFactory *iface, HSTRING *class_name )
 {
-    FIXME( "iface %p, class_name %p stub!\n", iface, class_name );
-    return E_NOTIMPL;
+    return WindowsCreateString( RuntimeClass_Windows_Gaming_Input_ForceFeedback_ConstantForceEffect,
+                                ARRAY_SIZE(RuntimeClass_Windows_Gaming_Input_ForceFeedback_ConstantForceEffect),
+                                class_name );
 }
 
 static HRESULT WINAPI activation_GetTrustLevel( IActivationFactory *iface, TrustLevel *trust_level )
 {
-    FIXME( "iface %p, trust_level %p stub!\n", iface, trust_level );
-    return E_NOTIMPL;
+    *trust_level = BaseTrust;
+    return S_OK;
 }
 
 static HRESULT WINAPI activation_ActivateInstance( IActivationFactory *iface, IInspectable **instance )

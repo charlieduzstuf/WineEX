@@ -116,8 +116,7 @@ static ULONG WINAPI gamepad_reading_Release( IGamepadReading *iface )
 
 static HRESULT WINAPI gamepad_reading_GetIids( IGamepadReading *iface, ULONG *iid_count, IID **iids )
 {
-    FIXME( "iface %p, iid_count %p, iids %p stub!\n", iface, iid_count, iids );
-    return E_NOTIMPL;
+    *iid_count = 0; *iids = NULL; return S_OK;
 }
 
 static HRESULT WINAPI gamepad_reading_GetRuntimeClassName( IGamepadReading *iface, HSTRING *class_name )
@@ -309,8 +308,7 @@ static ULONG WINAPI gamepad_Release( IGamepad *iface )
 
 static HRESULT WINAPI gamepad_GetIids( IGamepad *iface, ULONG *iid_count, IID **iids )
 {
-    FIXME( "iface %p, iid_count %p, iids %p stub!\n", iface, iid_count, iids );
-    return E_NOTIMPL;
+    *iid_count = 0; *iids = NULL; return S_OK;
 }
 
 static HRESULT WINAPI gamepad_GetRuntimeClassName( IGamepad *iface, HSTRING *class_name )
@@ -469,8 +467,7 @@ static ULONG WINAPI factory_Release( IActivationFactory *iface )
 
 static HRESULT WINAPI factory_GetIids( IActivationFactory *iface, ULONG *iid_count, IID **iids )
 {
-    FIXME( "iface %p, iid_count %p, iids %p stub!\n", iface, iid_count, iids );
-    return E_NOTIMPL;
+    *iid_count = 0; *iids = NULL; return S_OK;
 }
 
 static HRESULT WINAPI factory_GetRuntimeClassName( IActivationFactory *iface, HSTRING *class_name )

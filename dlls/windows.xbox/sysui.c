@@ -11,7 +11,7 @@ WINE_DEFAULT_DEBUG_CHANNEL(xbox);
 static const WCHAR RuntimeClass_SystemUI[] = L"Windows.Xbox.UI.SystemUI";
 
 /* ======================================================================
- * ISystemUIStatics — all show-* methods stub as FIXME
+ * ISystemUIStatics — all show-* methods complete immediately via make_null_async
  * ====================================================================== */
 typedef struct ISystemUIStatics ISystemUIStatics;
 typedef struct ISystemUIStaticsVtbl {

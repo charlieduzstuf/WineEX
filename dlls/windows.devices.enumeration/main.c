@@ -896,9 +896,53 @@ static HRESULT WINAPI device_statics2_FindAllAsync( IDeviceInformationStatics2 *
                                                     IIterable_HSTRING *additional_properties, DeviceInformationKind kind,
                                                     IAsyncOperation_DeviceInformationCollection **async_operation )
 {
-    FIXME( "iface %p, filter %s, additional_properties %p, kind %u, async_operation %p stub!\n",
+    static const DEV_OBJECT_TYPE kind_type[] = {
+        DevObjectTypeUnknown,
+        DevObjectTypeDeviceInterfaceDisplay,
+        DevObjectTypeDeviceContainerDisplay,
+        DevObjectTypeDevice,
+        DevObjectTypeDeviceInterfaceClass,
+        DevObjectTypeAEP,
+        DevObjectTypeAEPContainer,
+        DevObjectTypeAEPService,
+        DevObjectTypeDevicePanel,
+    };
+    const DEVPROPCOMPKEY device_iface_default_props[] = {
+        { DEVPKEY_DeviceInterface_Enabled, DEVPROP_STORE_SYSTEM, NULL },
+        { DEVPKEY_Device_InstanceId, DEVPROP_STORE_SYSTEM, NULL },
+    };
+    DEV_OBJECT_TYPE type = DevObjectTypeUnknown;
+    DEVPROPCOMPKEY *prop_keys = NULL;
+    struct aqs_expr *expr = NULL;
+    ULONG prop_keys_len = 0;
+    IUnknown *params;
+    HRESULT hr = S_OK;
+
+    TRACE( "iface %p, filter %s, additional_properties %p, kind %u, async_operation %p\n",
             iface, debugstr_hstring( filter ), additional_properties, kind, async_operation );
-    return E_NOTIMPL;
+
+    if (kind < ARRAY_SIZE( kind_type ))
+    {
+        type = kind_type[kind];
+        if (kind == DeviceInformationKind_DeviceInterface)
+            if (FAILED(hr = devpropcompkeys_init( &prop_keys, &prop_keys_len, device_iface_default_props, ARRAY_SIZE( device_iface_default_props ) )))
+                goto failed;
+    }
+    else FIXME( "Unknown DeviceInformationKind value: %u\n", kind );
+
+    if (additional_properties && FAILED(hr = devpropcompkeys_append_names( &prop_keys, &prop_keys_len, additional_properties ))) goto failed;
+    if (FAILED(hr = aqs_parse_query( WindowsGetStringRawBuffer( filter, NULL ), &expr, NULL ))) goto failed;
+    if (FAILED(hr = devquery_params_create( type, expr, prop_keys, prop_keys_len, &params ))) goto failed;
+
+    hr = async_operation_inspectable_create( &IID_IAsyncOperation_DeviceInformationCollection, (IUnknown *)iface, params, find_all_async,
+                                             (IAsyncOperation_IInspectable **)async_operation );
+    IUnknown_Release( params );
+    return hr;
+
+failed:
+    free( prop_keys );
+    free_aqs_expr( expr );
+    return hr;
 }
 
 static const char *debugstr_DeviceInformationKind( DeviceInformationKind kind )

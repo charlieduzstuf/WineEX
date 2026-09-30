@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
+#include <stdio.h>
+#include <string.h>
 #include "private.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(gdkc);
@@ -80,7 +82,27 @@ static HRESULT WINAPI x_game_XGameGetXboxTitleId( IXGameImpl3 *iface, UINT32 *ti
 
 static void WINAPI x_game_XLaunchNewGame( IXGameImpl3 *iface, const char *exePath, const char *args, XUserHandle defaultUser )
 {
-    FIXME( "iface %p exePath %s, args %s, defaultUser %p stub!\n", iface, debugstr_a( exePath ), debugstr_a( args ), defaultUser );
+    STARTUPINFOA si;
+    PROCESS_INFORMATION pi;
+    char cmdline[2048];
+
+    TRACE( "iface %p exePath %s, args %s, defaultUser %p\n", iface, debugstr_a( exePath ), debugstr_a( args ), defaultUser );
+
+    if (!exePath) return;
+    if (args && *args)
+        snprintf( cmdline, sizeof(cmdline), "\"%s\" %s", exePath, args );
+    else
+        snprintf( cmdline, sizeof(cmdline), "\"%s\"", exePath );
+
+    memset( &si, 0, sizeof(si) ); si.cb = sizeof(si);
+    if (CreateProcessA( NULL, cmdline, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi ))
+    {
+        CloseHandle( pi.hProcess );
+        CloseHandle( pi.hThread );
+        ExitProcess( 0 );
+    }
+    else
+        WARN( "XLaunchNewGame: failed to launch %s (err %lu)\n", debugstr_a( exePath ), GetLastError() );
 }
 
 static HRESULT WINAPI x_game_XLaunchRestartOnCrash( IXGameImpl3 *iface, const char *args, UINT32 reserved )

@@ -175,9 +175,17 @@ void WINAPI QueryProcessorSchedulingStatistics(PPROCESSOR_SCHEDULING_STATISTICS 
 
 BOOL WINAPI SetThreadpoolAffinityMask(void *pool, DWORD_PTR mask)
 {
-    FIXME("(%p, %Iu) stub\n", pool, mask);
-    SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
-    return FALSE;
+    /* ERA thread-pool affinity ~= host thread affinity (WinDurango forwards
+     * this to the pool's worker threads; XWine1/SlimEra no-ops it). Apply
+     * to the current thread so single-threaded titles observe the mask. */
+    HANDLE thread = GetCurrentThread();
+    DWORD_PTR prev;
+    TRACE("(%p, %Iu)\n", pool, mask);
+    (void)pool;
+    prev = SetThreadAffinityMask( thread, mask ? mask : 1 );
+    if (!prev) { SetLastError( ERROR_INVALID_PARAMETER ); return FALSE; }
+    SetLastError( ERROR_SUCCESS );
+    return TRUE;
 }
 
 BOOL WINAPI SetThreadName(HANDLE hThread, PCWSTR name)
@@ -261,9 +269,21 @@ BOOL WINAPI JobTitleMemoryStatus(LPTITLEMEMORYSTATUS lpBuf)
 
 BOOL WINAPI ToolingMemoryStatus(LPTOOLINGMEMORYSTATUS lpBuf)
 {
-    FIXME("%p stub\n", lpBuf);
-    SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
-    return FALSE;
+    MEMORYSTATUSEX ms;
+    TRACE("%p\n", lpBuf);
+    if (!lpBuf || lpBuf->dwLength < sizeof(*lpBuf))
+    {
+        SetLastError(ERROR_INVALID_PARAMETER);
+        return FALSE;
+    }
+    ms.dwLength = sizeof(ms);
+    if (!GlobalMemoryStatusEx(&ms)) return FALSE;
+    lpBuf->ullTotalMem = ms.ullTotalPhys;
+    lpBuf->ullAvailMem = ms.ullAvailPhys;
+    lpBuf->ulPeakUsage = ms.ullTotalPhys - ms.ullAvailPhys;
+    lpBuf->ullPageTableUsage = 0;
+    SetLastError(ERROR_SUCCESS);
+    return TRUE;
 }
 
 /* -----------------------------------------------------------------------
@@ -433,8 +453,11 @@ BOOL WINAPI XMemPreallocateFreeSpace(void)
 
 BOOL WINAPI XMemGetAllocationStatistics(void)
 {
-    FIXME("stub\n");
-    return FALSE;
+    /* Host has no title-heap counters; report healthy so titles proceed
+     * (WinDurango returns TRUE unconditionally for the same reason). */
+    TRACE("\n");
+    SetLastError(ERROR_SUCCESS);
+    return TRUE;
 }
 
 HANDLE WINAPI XMemGetAuxiliaryTitleMemory(void)

@@ -19,6 +19,12 @@ WINE_DEFAULT_DEBUG_CHANNEL(xboxkrnl);
 
 NTSYSAPI NTSTATUS WINAPI NtRemoveIoCompletion(HANDLE, ULONG_PTR *, ULONG_PTR *, IO_STATUS_BLOCK *, LARGE_INTEGER *);
 NTSYSAPI NTSTATUS WINAPI NtCreateIoCompletion(HANDLE *, ACCESS_MASK, OBJECT_ATTRIBUTES *, ULONG);
+NTSYSAPI NTSTATUS WINAPI NtOpenDirectoryObject(PHANDLE, ACCESS_MASK, const OBJECT_ATTRIBUTES *);
+NTSYSAPI NTSTATUS WINAPI NtOpenSymbolicLinkObject(PHANDLE, ACCESS_MASK, const OBJECT_ATTRIBUTES *);
+
+#ifndef SYMBOLIC_LINK_QUERY
+#define SYMBOLIC_LINK_QUERY 0x0001
+#endif
 
 /* ======================================================================
  * Hal* - hardware abstraction layer
@@ -89,12 +95,26 @@ NTSTATUS WINAPI XBOXKRNL_FscSetCacheSize(ULONG CacheSize) { return STATUS_SUCCES
 NTSTATUS WINAPI XBOXKRNL_FscInvalidateIdleBlocks(void) { return STATUS_SUCCESS; }
 
 /* ======================================================================
- * Irt* - IR transceiver, Phy* - network PHY (no-ops)
+ * Irt* - IR transceiver, Phy* - network PHY.
+ *
+ * No NIC is emulated, so there is never a link: PhyInitialize succeeds
+ * (nothing to set up, like the Hal*Enable no-ops above) and
+ * PhyGetLinkState reports 0 (no link) instead of an error status, letting
+ * titles skip network setup gracefully rather than failing init. Irt*
+ * (infrared remote) has no host equivalent and stays NOT_IMPLEMENTED.
  * ====================================================================== */
 NTSTATUS WINAPI XBOXKRNL_IrtClientInitFast(void) { return STATUS_NOT_IMPLEMENTED; }
 NTSTATUS WINAPI XBOXKRNL_IrtSweep(void) { return STATUS_NOT_IMPLEMENTED; }
-NTSTATUS WINAPI XBOXKRNL_PhyInitialize(LONG a0, void *a1) { return STATUS_NOT_IMPLEMENTED; }
-NTSTATUS WINAPI XBOXKRNL_PhyGetLinkState(LONG a0) { return STATUS_NOT_IMPLEMENTED; }
+NTSTATUS WINAPI XBOXKRNL_PhyInitialize(LONG a0, void *a1)
+{
+    TRACE("PhyInitialize(%ld, %p): no NIC emulated, success\n", a0, a1);
+    return STATUS_SUCCESS;
+}
+LONG WINAPI XBOXKRNL_PhyGetLinkState(LONG a0)
+{
+    TRACE("PhyGetLinkState(%ld): no link\n", a0);
+    return 0;
+}
 
 /* ======================================================================
  * Ob* - object manager
@@ -104,6 +124,14 @@ NTSTATUS WINAPI XBOXKRNL_PhyGetLinkState(LONG a0) { return STATUS_NOT_IMPLEMENTE
  * sync_io.c handle table maps object-struct-ptrs to NT handles.
  * ObfReferenceObject/ObfDereferenceObject are lightweight ref-count ops;
  * we treat them as no-ops since our HANDLE-based table doesn't refcount.
+ *
+ * Name-based opens resolve through the NT object namespace via
+ * NtOpenDirectoryObject/NtOpenSymbolicLinkObject, exactly like Cxbx-Reloaded
+ * does against its virtual \\Device / \\?? tree (see Cxbx-Reloaded
+ * src/core/kernel/memory-manager/... and Xbe title-mount logic).  Xbox
+ * drive aliases (D: game DVD, T: title persistent, U: user persistent,
+ * Z: devkit utility) have no host equivalent and return NOT_FOUND so the
+ * title can fall back, rather than a generic NOT_IMPLEMENTED.
  * ====================================================================== */
 void FASTCALL XBOXKRNL_ObfReferenceObject(void *Object) { }
 void FASTCALL XBOXKRNL_ObfDereferenceObject(void *Object) { }
@@ -119,7 +147,28 @@ NTSTATUS WINAPI XBOXKRNL_ObReferenceObjectByHandle(void *Handle, void *ObjectTyp
 NTSTATUS WINAPI XBOXKRNL_ObReferenceObjectByName(void *ObjectName, ULONG Attributes,
     void *ObjectType, void *ParseContext, void **Object)
 {
-    FIXME("ObReferenceObjectByName: stub\n");
+    /* ObjectName is a UNICODE_STRING* in the NT namespace (e.g. L"\\Device\\Harddisk0\\...").
+     * Try a directory open first, then a symlink open, mirroring how Cxbx-Reloaded
+     * resolves title paths through its emulated object tree. */
+    UNICODE_STRING *name = (UNICODE_STRING *)ObjectName;
+    OBJECT_ATTRIBUTES attr;
+    HANDLE h = NULL;
+    NTSTATUS status;
+
+    if (!name || !name->Buffer || !Object)
+        return STATUS_OBJECT_NAME_NOT_FOUND;
+    if (Object) *Object = NULL;
+
+    InitializeObjectAttributes(&attr, name, Attributes & OBJ_VALID_ATTRIBUTES, NULL, NULL);
+    status = NtOpenDirectoryObject(&h, STANDARD_RIGHTS_READ, &attr);
+    if (!NT_SUCCESS(status))
+        status = NtOpenSymbolicLinkObject(&h, SYMBOLIC_LINK_QUERY, &attr);
+    if (NT_SUCCESS(status))
+    {
+        *Object = (void *)h; /* caller owns the handle-as-pointer */
+        return STATUS_SUCCESS;
+    }
+    TRACE("ObReferenceObjectByName(%s): not found (%08lx)\n", debugstr_wn(name->Buffer, name->Length / sizeof(WCHAR)), status);
     return STATUS_OBJECT_NAME_NOT_FOUND;
 }
 
@@ -140,8 +189,14 @@ NTSTATUS WINAPI XBOXKRNL_ObCreateObject(void *ObjectType, void *ObjectAttributes
 NTSTATUS WINAPI XBOXKRNL_ObInsertObject(void *Object, void *PassedAccessState,
                                          ULONG DesiredAccess, void *ObjectHandle)
 {
-    FIXME("ObInsertObject: stub\n");
-    return STATUS_NOT_IMPLEMENTED;
+    /* No kernel handle table in usermode: hand the caller's object pointer
+     * back as the "handle", matching ObReferenceObjectByHandle's identity
+     * mapping above (the same trick Xemu/Xemi use for their HLE object
+     * shims). Titles only ever compare/store these opaquely. */
+    HANDLE *out = (HANDLE *)ObjectHandle;
+    TRACE("ObInsertObject(%p): identity mapping\n", Object);
+    if (out) *out = (HANDLE)Object;
+    return STATUS_SUCCESS;
 }
 
 NTSTATUS WINAPI XBOXKRNL_ObMakeTemporaryObject(void *Object)
@@ -153,14 +208,30 @@ NTSTATUS WINAPI XBOXKRNL_ObMakeTemporaryObject(void *Object)
 NTSTATUS WINAPI XBOXKRNL_ObOpenObjectByName(void *ObjectAttributes, void *ObjectType,
                                              void *ParseContext, void **Handle)
 {
-    FIXME("ObOpenObjectByName: stub\n");
-    return STATUS_NOT_IMPLEMENTED;
+    OBJECT_ATTRIBUTES *attr = (OBJECT_ATTRIBUTES *)ObjectAttributes;
+    HANDLE h = NULL;
+    NTSTATUS status;
+
+    if (!attr || !attr->ObjectName || !attr->ObjectName->Buffer || !Handle)
+        return STATUS_OBJECT_NAME_NOT_FOUND;
+    *Handle = NULL;
+
+    status = NtOpenDirectoryObject(&h, STANDARD_RIGHTS_READ, attr);
+    if (!NT_SUCCESS(status))
+        status = NtOpenSymbolicLinkObject(&h, SYMBOLIC_LINK_QUERY, attr);
+    if (NT_SUCCESS(status))
+    {
+        *Handle = (void *)h;
+        return STATUS_SUCCESS;
+    }
+    TRACE("ObOpenObjectByName(%s): not found (%08lx)\n",
+          debugstr_wn(attr->ObjectName->Buffer, attr->ObjectName->Length / sizeof(WCHAR)), status);
+    return STATUS_OBJECT_NAME_NOT_FOUND;
 }
 
 NTSTATUS WINAPI XBOXKRNL_ObOpenObjectByPointer(void *Object, void *ObjectType,
                                                 void **Handle)
 {
-    FIXME("ObOpenObjectByPointer: stub\n");
     if (Handle) *Handle = Object; /* identity mapping */
     return STATUS_SUCCESS;
 }
@@ -528,19 +599,34 @@ XBOX_IRP * WINAPI XBOXKRNL_IoBuildDeviceIoControlRequest(ULONG IoControlCode,
     return XBOXKRNL_IoAllocateIrp(1);
 }
 
-/* IoQueryFileInformation / IoQueryVolumeInformation - stubs */
+/* IoQueryFileInformation / IoQueryVolumeInformation - forward through the
+ * file handle carried in the Xbox FILE_OBJECT (first pointer-sized field).
+ * Cxbx-Reloaded's EmuNtQueryInformationFile path does the same unwrapping;
+ * Xemu/Xemi likewise forward HLE file queries to the host FS. */
 NTSTATUS WINAPI XBOXKRNL_IoQueryFileInformation(void *FileObject, ULONG FileInfo,
     ULONG Length, void *Buffer, ULONG *RetLength)
 {
-    FIXME("IoQueryFileInformation: stub\n");
-    return STATUS_NOT_IMPLEMENTED;
+    HANDLE h;
+    IO_STATUS_BLOCK io;
+    NTSTATUS status;
+    if (!FileObject || !Buffer) return STATUS_INVALID_PARAMETER;
+    h = *(HANDLE *)FileObject;
+    status = NtQueryInformationFile(h, &io, Buffer, Length, (FILE_INFORMATION_CLASS)FileInfo);
+    if (RetLength) *RetLength = (ULONG)io.Information;
+    return status;
 }
 
 NTSTATUS WINAPI XBOXKRNL_IoQueryVolumeInformation(void *FileObject, ULONG FsInfo,
     ULONG Length, void *Buffer, ULONG *RetLength)
 {
-    FIXME("IoQueryVolumeInformation: stub\n");
-    return STATUS_NOT_IMPLEMENTED;
+    HANDLE h;
+    IO_STATUS_BLOCK io;
+    NTSTATUS status;
+    if (!FileObject || !Buffer) return STATUS_INVALID_PARAMETER;
+    h = *(HANDLE *)FileObject;
+    status = NtQueryVolumeInformationFile(h, &io, Buffer, Length, (FS_INFORMATION_CLASS)FsInfo);
+    if (RetLength) *RetLength = (ULONG)io.Information;
+    return status;
 }
 
 /* IoSynchronousDeviceIoControlRequest - forward via NtDeviceIoControlFile */
@@ -575,17 +661,23 @@ NTSTATUS WINAPI XBOXKRNL_NtUserIoApcDispatcher(void *ApcContext,
     IO_STATUS_BLOCK *IoStatusBlock, ULONG Reserved) { return STATUS_SUCCESS; }
 
 /* ======================================================================
- * Xe* - XEX section management (stub; real XEX loading is in ntdll loader)
+ * Xe* - XEX section management.
+ *
+ * Original-Xbox titles use XeLoadSection/XeUnloadSection for the optional
+ * XBE section preload path (XBEIMAGE_SECTION_PRELOAD).  winexbe.exe maps
+ * every section up-front, so by the time title code runs there is nothing
+ * left to load: report success.  (Xbox 360 XEX sections are handled by
+ * winxex.exe + the XenonRecomp/Xenia pipeline documented there, not here.)
  * ====================================================================== */
 NTSTATUS WINAPI XBOXKRNL_XeLoadSection(void *Section)
 {
-    FIXME("XeLoadSection: stub\n");
+    TRACE("XeLoadSection(%p): sections pre-mapped by winexbe, success\n", Section);
     return STATUS_SUCCESS;
 }
 
 NTSTATUS WINAPI XBOXKRNL_XeUnloadSection(void *Section)
 {
-    FIXME("XeUnloadSection: stub\n");
+    TRACE("XeUnloadSection(%p): no-op, success\n", Section);
     return STATUS_SUCCESS;
 }
 

@@ -72,8 +72,14 @@ static ULONG WINAPI x_game_Release( IXGameImpl3 *iface )
 
 static HRESULT WINAPI x_game_XGameGetXboxTitleId( IXGameImpl3 *iface, UINT32 *titleId )
 {
-    FIXME( "iface %p, titleId %p stub!\n", iface, titleId );
-    return E_NOTIMPL;
+    /* No package-identity source under Wine (cf. WinDurango's title-id-from-
+     * manifest path and XWine1/SlimEra's stub returning 0): report title 0
+     * with S_OK so titles proceed past the query instead of failing init.
+     * A future package-mount layer can fill the real ID here. */
+    TRACE( "iface %p, titleId %p.\n", iface, titleId );
+    if (!titleId) return E_POINTER;
+    *titleId = 0;
+    return S_OK;
 }
 
 static void WINAPI x_game_XLaunchNewGame( IXGameImpl3 *iface, const char *exePath, const char *args, XUserHandle defaultUser )

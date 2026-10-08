@@ -7,6 +7,7 @@
  */
 
 #include <stdarg.h>
+#include <string.h>
 #include "windef.h"
 #include "winbase.h"
 #include "winternl.h"
@@ -17,6 +18,70 @@
 WINE_DEFAULT_DEBUG_CHANNEL(xboxkrnl);
 
 NTSYSAPI NTSTATUS WINAPI NtTestAlert(void);
+
+/* Live time-keeping data exports (generated_data.c): KeTickCount,
+ * KeSystemTime/KeInterruptTime (KSYSTEM_TIME), KeTimeIncrement.
+ * Real titles poll KeTickCount for frame timing, so a permanently-zero
+ * counter would hang them; a background thread ticks it every 10 ms and
+ * refreshes the KSYSTEM_TIME structs from the host clock — the same
+ * approach Xemu/Xemi use for their HLE time shims. KeTimeIncrement is the
+ * Xbox tick quantum: 10 ms = 100000 x 100-ns units. */
+extern ULONG XBOXKRNL_KeTickCount;
+extern BYTE XBOXKRNL_KeSystemTime[12];
+extern BYTE XBOXKRNL_KeInterruptTime[12];
+extern ULONG XBOXKRNL_KeTimeIncrement;
+
+static HANDLE tick_thread;
+static HANDLE tick_stop;
+
+static void tick_write_ksystem_time( BYTE dst[12], const LARGE_INTEGER *t )
+{
+    ULONG low = t->u.LowPart, high = t->u.HighPart;
+    memcpy( dst, &low, 4 );        /* LowPart */
+    memcpy( dst + 4, &high, 4 );   /* High1Time */
+    memcpy( dst + 8, &high, 4 );   /* High2Time */
+}
+
+static DWORD WINAPI tick_worker( void *arg )
+{
+    LARGE_INTEGER t;
+    (void)arg;
+    for (;;)
+    {
+        if (WaitForSingleObject( tick_stop, 10 ) != WAIT_TIMEOUT) break;
+        InterlockedIncrement( (LONG *)&XBOXKRNL_KeTickCount );
+        NtQuerySystemTime( &t );
+        tick_write_ksystem_time( XBOXKRNL_KeSystemTime, &t );
+        tick_write_ksystem_time( XBOXKRNL_KeInterruptTime, &t );
+    }
+    return 0;
+}
+
+/* Started from DllMain (main.c); the worker only Sleeps and reads the
+ * host clock, so it never re-enters the loader. */
+void xbox_tick_init(void)
+{
+    LARGE_INTEGER t;
+    XBOXKRNL_KeTimeIncrement = 100000;
+    NtQuerySystemTime( &t );
+    tick_write_ksystem_time( XBOXKRNL_KeSystemTime, &t );
+    tick_write_ksystem_time( XBOXKRNL_KeInterruptTime, &t );
+    tick_stop = CreateEventW( NULL, TRUE, FALSE, NULL );
+    if (tick_stop)
+        tick_thread = CreateThread( NULL, 0, tick_worker, NULL, 0, NULL );
+}
+
+void xbox_tick_fini(void)
+{
+    if (tick_stop) SetEvent( tick_stop );
+    if (tick_thread)
+    {
+        WaitForSingleObject( tick_thread, 1000 );
+        CloseHandle( tick_thread );
+        tick_thread = NULL;
+    }
+    if (tick_stop) { CloseHandle( tick_stop ); tick_stop = NULL; }
+}
 
 /* ======================================================================
  * IRQL - in usermode always PASSIVE_LEVEL (0)

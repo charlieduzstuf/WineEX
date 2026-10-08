@@ -476,8 +476,10 @@ static NTSTATUS create_vdm_process( HANDLE token, HANDLE debug, SECURITY_ATTRIBU
  *           create_xbe_process
  *
  * Launch winexbe.exe with the XBE path as its command-line argument.
- * winexbe.exe handles section mapping, kernel thunk resolution, and
+ * winexbe.exe handles section mapping, kernel thunk resolution (ordinals
+ * from Cxbx-Reloaded KernelThunk.cpp, cf. Xemu/Xemi HLE tables), TLS and
  * thread creation — exactly as winevdm.exe handles Win16/DOS images.
+ * Extra command-line args after the image path are forwarded verbatim.
  */
 static NTSTATUS create_xbe_process( HANDLE token, HANDLE debug, SECURITY_ATTRIBUTES *psa,
                                     SECURITY_ATTRIBUTES *tsa, DWORD flags,
@@ -491,17 +493,105 @@ static NTSTATUS create_xbe_process( HANDLE token, HANDLE debug, SECURITY_ATTRIBU
     WCHAR *newcmdline;
     NTSTATUS status;
     UINT len;
+    const WCHAR *extra = L"";
 
-    len = lstrlenW(winexbe) + lstrlenW(xbe_path) + 4;
+    /* Forward everything after the image path: orig_cmdline looks like
+     * '"<xbe_path>" <extra...>' or '<xbe_path> <extra...>' (cf. launch_vdm).
+     * Find the end of the image token and keep the tail. */
+    if (orig_cmdline)
+    {
+        const WCHAR *p = orig_cmdline;
+        if (*p == '"') { p = wcschr( p + 1, '"' ); if (p) p++; else p = NULL; }
+        else { while (*p && *p != ' ' && *p != '\t') p++; }
+        if (p)
+        {
+            while (*p == ' ' || *p == '\t') p++;
+            if (*p) extra = p;
+        }
+    }
+
+    len = lstrlenW(winexbe) + lstrlenW(xbe_path) + lstrlenW(extra) + 8;
     if (!(newcmdline = RtlAllocateHeap( GetProcessHeap(), 0, len * sizeof(WCHAR) )))
         return STATUS_NO_MEMORY;
 
-    swprintf( newcmdline, len, L"%s \"%s\"", winexbe, xbe_path );
+    if (*extra)
+        swprintf( newcmdline, len, L"%s \"%s\" %s", winexbe, xbe_path, extra );
+    else
+        swprintf( newcmdline, len, L"%s \"%s\"", winexbe, xbe_path );
     RtlInitUnicodeString( &params->ImagePathName, winexbe );
     RtlInitUnicodeString( &params->CommandLine, newcmdline );
     status = create_nt_process( token, debug, psa, tsa, flags, params, info, 0, 0, NULL, NULL );
     HeapFree( GetProcessHeap(), 0, newcmdline );
     return status;
+}
+
+/***********************************************************************
+ *           create_xex_process
+ *
+ * Launch winxex.exe for Xbox 360 XEX2 images (Xenon/PPC, cf. Xenia's
+ * xex2_info.h layouts and the XenonRecomp pipeline documented in
+ * programs/winxex/winxex.c). Like create_xbe_process above, extra args
+ * are forwarded verbatim after the image path.
+ */
+static NTSTATUS create_xex_process( HANDLE token, HANDLE debug, SECURITY_ATTRIBUTES *psa,
+                                    SECURITY_ATTRIBUTES *tsa, DWORD flags,
+                                    RTL_USER_PROCESS_PARAMETERS *params,
+                                    RTL_USER_PROCESS_INFORMATION *info,
+                                    const WCHAR *xex_path, const WCHAR *orig_cmdline )
+{
+    const WCHAR *winxex = (is_win64 || is_wow64 ?
+                            L"C:\\windows\\syswow64\\winxex.exe" :
+                            L"C:\\windows\\system32\\winxex.exe");
+    WCHAR *newcmdline;
+    NTSTATUS status;
+    UINT len;
+    const WCHAR *extra = L"";
+
+    if (orig_cmdline)
+    {
+        const WCHAR *p = orig_cmdline;
+        if (*p == '"') { p = wcschr( p + 1, '"' ); if (p) p++; else p = NULL; }
+        else { while (*p && *p != ' ' && *p != '\t') p++; }
+        if (p)
+        {
+            while (*p == ' ' || *p == '\t') p++;
+            if (*p) extra = p;
+        }
+    }
+
+    len = lstrlenW(winxex) + lstrlenW(xex_path) + lstrlenW(extra) + 8;
+    if (!(newcmdline = RtlAllocateHeap( GetProcessHeap(), 0, len * sizeof(WCHAR) )))
+        return STATUS_NO_MEMORY;
+
+    if (*extra)
+        swprintf( newcmdline, len, L"%s \"%s\" %s", winxex, xex_path, extra );
+    else
+        swprintf( newcmdline, len, L"%s \"%s\"", winxex, xex_path );
+    RtlInitUnicodeString( &params->ImagePathName, winxex );
+    RtlInitUnicodeString( &params->CommandLine, newcmdline );
+    status = create_nt_process( token, debug, psa, tsa, flags, params, info, 0, 0, NULL, NULL );
+    HeapFree( GetProcessHeap(), 0, newcmdline );
+    return status;
+}
+
+/* Xbox One/Series packaged titles (.xvc/.msixvc/.appx, Durango/Scarlett ERA):
+ * these are ZIP-based APPX containers (PK\x03\x04 magic, cf. WinDurango's
+ * package-mount code and XWine1/SlimEra Era package handling). We cannot
+ * execute them directly — report recognition so the caller gets a clear
+ * diagnostic instead of STATUS_INVALID_IMAGE_NOT_MZ. Returns TRUE if path
+ * is a recognised Xbox One package container. */
+static BOOL parse_xbox_one_package( const WCHAR *path )
+{
+    HANDLE file;
+    BYTE sig[4];
+    DWORD read = 0;
+    file = CreateFileW( path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, 0 );
+    if (file == INVALID_HANDLE_VALUE) return FALSE;
+    ReadFile( file, sig, sizeof(sig), &read, NULL );
+    CloseHandle( file );
+    if (read < 4) return FALSE;
+    /* ZIP local-file-header magic PK\x03\x04 (APPX/MSIXVC are ZIPs) */
+    return sig[0] == 'P' && sig[1] == 'K' && sig[2] == 3 && sig[3] == 4;
 }
 
 
@@ -1382,17 +1472,18 @@ BOOL WINAPI DECLSPEC_HOTPATCH CreateProcessInternalW( HANDLE token, const WCHAR 
         }
         else if (!wcsicmp( p, L".xex" ))
         {
-            /* Real XEX2 container parsing (see parse_xex2_file() above), not
-             * execution: the Xbox 360 is PowerPC and Wine has no PPC->x86
-             * recompiler. A recognised XEX2 file fails process creation with
-             * STATUS_IMAGE_MACHINE_TYPE_MISMATCH - the file is a legitimate
-             * executable image, just for a CPU architecture this host can't
-             * run natively, which is exactly what that status describes. */
+            /* Xbox 360 XEX2 (Xenon/PPC): parse the container (see
+             * parse_xex2_file(), layouts from Xenia xex2_info.h) and hand
+             * the image to winxex.exe, which reports title/media/imports
+             * and runs plaintext payloads under qemu-ppc, or directs
+             * encrypted/compressed retail images at the
+             * Xenia/XeFu/Xemi -> XenonRecomp pipeline. */
             if (parse_xex2_file( app_name ))
             {
-                WARN( "%s is a recognised Xbox 360 (XEX2) executable; Wine cannot execute "
-                      "PowerPC code, this is header/metadata recognition only\n", debugstr_w(app_name) );
-                status = STATUS_IMAGE_MACHINE_TYPE_MISMATCH;
+                TRACE( "starting %s as XEX2 via winxex.exe\n", debugstr_w(app_name) );
+                status = create_xex_process( token, debug, process_attr, thread_attr,
+                                             nt_flags, params, &rtl_info,
+                                             app_name, tidy_cmdline );
             }
             else
             {
@@ -1418,6 +1509,25 @@ BOOL WINAPI DECLSPEC_HOTPATCH CreateProcessInternalW( HANDLE token, const WCHAR 
                 WARN( "%s has a .xbe extension but is not a recognisable XBE image\n", debugstr_w(app_name) );
                 status = STATUS_INVALID_IMAGE_FORMAT;
             }
+        }
+        else if (!wcsicmp( p, L".xvc" ) || !wcsicmp( p, L".msixvc" ) ||
+                 !wcsicmp( p, L".appx" ) || !wcsicmp( p, L".msix" ))
+        {
+            /* Xbox One/Series packaged title (Durango/Scarlett ERA, cf.
+             * WinDurango package mounting and XWine1/SlimEra Era loader):
+             * ZIP-based containers are recognised here so the failure
+             * mode is a clear diagnostic, not generic bad-image. Native
+             * ERA execution (kernelx/xgameruntime) attaches once the
+             * package is mounted, which this dispatch does not attempt. */
+            if (parse_xbox_one_package( app_name ))
+            {
+                WARN( "%s is a recognised Xbox One package container; mount/install "
+                      "it and run the contained ERA binary instead of the package itself\n",
+                      debugstr_w(app_name) );
+                status = STATUS_INVALID_IMAGE_FORMAT;
+            }
+            else WARN( "%s has an Xbox package extension but no ZIP container magic\n",
+                       debugstr_w(app_name) );
         }
         break;
     }

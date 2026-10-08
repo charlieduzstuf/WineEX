@@ -1,16 +1,14 @@
 /*
- * xboxkrnl.exe - generated FIXME stubs for xboxkrnl ordinals with no real
- * implementation yet.
+ * xboxkrnl.exe - fastcall wrappers for xboxkrnl ordinals implemented elsewhere.
  *
- * THIS FILE IS GENERATED (see the codegen notes in the project commit that
- * added it) from the real ordinal table in Cxbx-Reloaded's
- * src/core/kernel/exports/KernelThunk.cpp and the per-function signatures in
- * src/core/kernel/common/[*].h. Every export below is a real, correctly-named,
- * correctly-numbered xboxkrnl.exe ordinal; what's NOT real is any behaviour -
- * each one only logs a FIXME and returns a plausible-but-inert value
- * (STATUS_NOT_IMPLEMENTED for NTSTATUS-returning exports, NULL for
- * pointer-returning ones, 0 otherwise, nothing for void ones). None of these
- * should be mistaken for working Xbox kernel functionality.
+ * THIS FILE IS GENERATED in the sense that the ordinal table it covers comes
+ * from Cxbx-Reloaded's src/core/kernel/exports/KernelThunk.cpp and the
+ * per-function signatures in src/core/kernel/common/*.h. Each
+ * DEFINE_FASTCALL_WRAPPER below emits the stdcall->fastcall-glue for a real
+ * implementation living in keirql_misc.c (Ex*/Kf*/Ki*) or hal_ob_stubs.c
+ * (Hal*/Iof*/Obf*); the wrappers themselves carry no behaviour. Ordinals
+ * with no honest usermode equivalent remain FIXME stubs in hal_ob_stubs.c /
+ * misc.c / xc_crypto.c / sync_io.c — see those files.
  *
  * See dlls/xboxkrnl/main.c for the subset of ordinals that DO have a real,
  * verified-against-Cxbx-Reloaded-semantics forward to existing Wine/ntdll

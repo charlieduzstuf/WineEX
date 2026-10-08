@@ -7,17 +7,28 @@
  * Kernel thunk resolution: each DWORD in the thunk table holds an ordinal
  * (bit 31 set) pointing into xboxkrnl.exe's by-ordinal export table.
  * We resolve each thunk to the real function address at load time.
+ * Non-kernel imports (Xdk libraries linked as extra DLLs, e.g. xbdm) use a
+ * standard PE IMAGE_IMPORT_DESCRIPTOR array at nonkernel_import_dir_addr;
+ * those are resolved with LoadLibraryA/GetProcAddress like Cxbx-Reloaded's
+ * Xbe::ResolveNonKernelImports / Xemu's HLE library mapping does.
+ *
+ * TLS: the XBE TLS directory (Xbe::Tls in Cxbx) holds a data template plus
+ * an optional callback. We allocate a host TLS slot, copy the template into
+ * freshly committed memory and invoke the callback on the new thread before
+ * jumping to the entry point — matching Cxbx-Reloaded's EmuTLS handling.
  *
  * Section mapping: XBE sections live at absolute 32-bit virtual addresses.
  * We use VirtualAlloc with MEM_RESERVE at base_addr for the full image, then
  * commit + populate each section individually. Page protections are set per
- * section flags after data is copied.
+ * section flags after data is copied (including HEAD/TAIL_PAGE_READONLY
+ * first/last-page downgrades). Shared-page refcounts are initialised to 1.
  */
 
 #include <stdarg.h>
 #include <string.h>
 #include "windef.h"
 #include "winbase.h"
+#include "winnls.h"
 #include "winternl.h"
 #include "ntstatus.h"
 
@@ -85,10 +96,39 @@ struct xbe_section_header {
 
 #define XBEIMAGE_SECTION_WRITEABLE  0x00000001
 #define XBEIMAGE_SECTION_EXECUTABLE 0x00000004
+#define XBEIMAGE_SECTION_HEAD_PAGE_READONLY 0x00000010
+#define XBEIMAGE_SECTION_TAIL_PAGE_READONLY 0x00000020
 
 #define XBE_THUNK_ORDINAL_MASK 0x7FFFFFFFu
 
 #define XBE_LOAD_BUFFER 0x10000
+
+/* XBE TLS directory (Cxbx-Reloaded Xbe::Tls, 6 ULONG fields). */
+struct xbe_tls_dir {
+    UINT32 data_start_addr;
+    UINT32 data_end_addr;
+    UINT32 tls_index_addr;
+    UINT32 tls_callback_addr;
+    UINT32 zero_fill_size;
+    UINT32 characteristics;
+};
+
+/* PE import descriptor for non-kernel imports (IMAGE_IMPORT_DESCRIPTOR). */
+struct xbe_import_desc {
+    UINT32 original_first_thunk;
+    UINT32 timedate;
+    UINT32 forwarder_chain;
+    UINT32 name_addr;
+    UINT32 first_thunk;
+};
+
+struct xbe_library_version {
+    char   name[8];
+    UINT16 major_version;
+    UINT16 minor_version;
+    UINT16 build_version;
+    UINT16 flags;
+};
 
 /* ======================================================================
  * Helpers
@@ -115,10 +155,15 @@ static const void *xbe_va( const BYTE *buf, UINT32 bufsz, UINT32 base, UINT32 va
  * Kernel thunk table resolver
  *
  * Thunk table is an array of UINT32 at kernel_thunk_addr (absolute VA).
- * Each non-zero entry: bit 31 set, low 15 bits = xboxkrnl.exe ordinal.
+ * Each non-zero entry: bit 31 set, low 15 bits = xboxkrnl.exe ordinal
+ * (Cxbx-Reloaded KernelThunk.cpp; Xemu/Xemi use the same ordinal table).
  * We replace each entry with GetProcAddress(hXboxKrnl, ordinal).
+ * Unlike the old silent leave-it-fault behaviour, an unresolvable ordinal
+ * is fatal with the ordinal printed: silent faults are undebuggable and
+ * Xemu/Xemi both fail load here too.
  * ====================================================================== */
-static void resolve_kernel_thunks( UINT32 *thunk_table, HMODULE hKrnl )
+static DWORD xbe_unresolved_ordinal; /* set on failure for the fatal message */
+static BOOL resolve_kernel_thunks( UINT32 *thunk_table, HMODULE hKrnl )
 {
     UINT32 i;
     for (i = 0; thunk_table[i]; i++)
@@ -128,12 +173,53 @@ static void resolve_kernel_thunks( UINT32 *thunk_table, HMODULE hKrnl )
         FARPROC fn = GetProcAddress( hKrnl, (LPCSTR)(ULONG_PTR)ordinal );
         if (fn)
             thunk_table[i] = (UINT32)(ULONG_PTR)fn;
-        /* unresolved thunk: leave original — the function will fault at call site */
+        else
+        {
+            xbe_unresolved_ordinal = ordinal;
+            return FALSE;
+        }
     }
+    return TRUE;
+}
+
+/* Resolve non-kernel imports: IMAGE_IMPORT_DESCRIPTOR array at the mapped
+ * nonkernel_import_dir_addr (Cxbx-Reloaded Xbe::ResolveNonKernelImports).
+ * Each entry names a DLL (e.g. xbdm.dll on devkit titles); we LoadLibraryA
+ * it and patch OriginalFirstThunk->FirstThunk. Missing DLL => fatal since
+ * the title cannot run without it. */
+static BOOL resolve_nonkernel_imports( UINT32 import_dir_addr )
+{
+    const struct xbe_import_desc *desc = (const struct xbe_import_desc *)(ULONG_PTR)import_dir_addr;
+    for (; desc->name_addr; desc++)
+    {
+        const char *dll = (const char *)(ULONG_PTR)desc->name_addr;
+        HMODULE mod;
+        UINT32 *oft, *ft;
+        if (!desc->original_first_thunk || !desc->first_thunk) return FALSE;
+        mod = LoadLibraryA( dll );
+        if (!mod) return FALSE;
+        oft = (UINT32 *)(ULONG_PTR)desc->original_first_thunk;
+        ft  = (UINT32 *)(ULONG_PTR)desc->first_thunk;
+        for (; *oft; oft++, ft++)
+        {
+            FARPROC fn;
+            if (*oft & 0x80000000u)
+                fn = GetProcAddress( mod, (LPCSTR)(ULONG_PTR)(*oft & 0xffff) );
+            else
+                fn = GetProcAddress( mod, (LPCSTR)(ULONG_PTR)(*oft + 2) ); /* skip hint */
+            if (!fn) return FALSE;
+            *ft = (UINT32)(ULONG_PTR)fn;
+        }
+    }
+    return TRUE;
 }
 
 /* ======================================================================
  * Section mapper: VirtualAlloc at absolute XBE VAs
+ *
+ * HEAD/TAIL_PAGE_READONLY downgrade the first/last 4K page of the section
+ * (Cxbx-Reloaded Xbe::MapSections). Shared-page refcounts are initialised
+ * to 1 so title code observing them sees a mapped section, like Xemu does.
  * ====================================================================== */
 static BOOL map_xbe_sections( HANDLE file, UINT32 base_addr, UINT32 sizeof_image,
                                const struct xbe_section_header *sections, UINT32 nsec )
@@ -174,8 +260,71 @@ static BOOL map_xbe_sections( HANDLE file, UINT32 base_addr, UINT32 sizeof_image
         else if (!(s->flags & XBEIMAGE_SECTION_WRITEABLE))
             VirtualProtect( dest, s->virtual_size, PAGE_READONLY, &old_prot );
         /* else leave PAGE_READWRITE */
+
+        /* HEAD/TAIL_PAGE_READONLY: downgrade first/last 4K page (Cxbx Xbe::MapSections) */
+        if ((s->flags & XBEIMAGE_SECTION_HEAD_PAGE_READONLY) && s->virtual_size > 4096)
+            VirtualProtect( dest, 4096, PAGE_READONLY, &old_prot );
+        if ((s->flags & XBEIMAGE_SECTION_TAIL_PAGE_READONLY) && s->virtual_size > 4096)
+            VirtualProtect( dest + s->virtual_size - 4096, 4096, PAGE_READONLY, &old_prot );
+
+        /* Shared-page refcounts: mark mapped (Xemu initialises these to 1) */
+        if (s->head_shared_page_ref_count_addr)
+            *(volatile ULONG *)(ULONG_PTR)s->head_shared_page_ref_count_addr = 1;
+        if (s->tail_shared_page_ref_count_addr)
+            *(volatile ULONG *)(ULONG_PTR)s->tail_shared_page_ref_count_addr = 1;
     }
     return TRUE;
+}
+
+/* Initialise XBE TLS: allocate a host TLS slot, publish its index through
+ * tls_index_addr, and zero-fill/reserve per the template (Cxbx EmuTLS). The
+ * optional callback runs on the new thread before the entry point. */
+static DWORD xbe_tls_index = TLS_OUT_OF_INDEXES;
+static void (WINAPI *xbe_tls_callback)( void *dll_base, DWORD reason, void *reserved );
+
+static void init_xbe_tls( UINT32 tls_dir_addr )
+{
+    const struct xbe_tls_dir *tls = (const struct xbe_tls_dir *)(ULONG_PTR)tls_dir_addr;
+    UINT32 data_size, total;
+    BYTE *tls_data;
+    if (!tls_dir_addr || !tls->data_start_addr) return;
+    data_size = tls->data_end_addr > tls->data_start_addr
+              ? tls->data_end_addr - tls->data_start_addr : 0;
+    total = data_size + tls->zero_fill_size;
+    if (!total) total = 4;
+    tls_data = VirtualAlloc( NULL, total, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
+    if (!tls_data) return;
+    if (data_size)
+        memcpy( tls_data, (void *)(ULONG_PTR)tls->data_start_addr, data_size );
+    xbe_tls_index = TlsAlloc();
+    if (xbe_tls_index != TLS_OUT_OF_INDEXES)
+    {
+        TlsSetValue( xbe_tls_index, tls_data );
+        if (tls->tls_index_addr)
+            *(volatile DWORD *)(ULONG_PTR)tls->tls_index_addr = xbe_tls_index;
+    }
+    if (tls->tls_callback_addr)
+        xbe_tls_callback = (void (WINAPI *)(void*,DWORD,void*))(ULONG_PTR)tls->tls_callback_addr;
+}
+
+/* Publish the XBE path through xboxkrnl's XeImageFileName export
+ * (ordinal 326). Dashboards and homebrew (e.g. MXM, XBMC) read it to
+ * locate their data files; Xemu fills it from the loaded path the same
+ * way. Resolved by ordinal since xboxkrnl.exe exports by ordinal only. */
+static void publish_image_file_name( HMODULE hKrnl, const WCHAR *xbe_path )
+{
+    STRING *img = (STRING *)GetProcAddress( hKrnl, (LPCSTR)(ULONG_PTR)326 );
+    char *ansi;
+    int len;
+    if (!img) return;
+    len = WideCharToMultiByte( CP_ACP, 0, xbe_path, -1, NULL, 0, NULL, NULL );
+    if (len <= 1) return;
+    ansi = HeapAlloc( GetProcessHeap(), 0, len );
+    if (!ansi) return;
+    WideCharToMultiByte( CP_ACP, 0, xbe_path, -1, ansi, len, NULL, NULL );
+    img->Buffer = ansi;
+    img->Length = (USHORT)(len - 1);
+    img->MaximumLength = (USHORT)len;
 }
 
 /* ======================================================================
@@ -186,8 +335,14 @@ typedef void (__cdecl *XBE_ENTRY)(void);
 
 static DWORD WINAPI xbe_thread_entry( void *param )
 {
-    XBE_ENTRY entry = (XBE_ENTRY)(ULONG_PTR)param;
-    entry();
+    /* Run the XBE TLS callback first (DLL_THREAD_ATTACH), like Cxbx does
+     * before jumping to the title entry point. */
+    if (xbe_tls_callback)
+        xbe_tls_callback( NULL, 1 /* DLL_THREAD_ATTACH */, NULL );
+    {
+        XBE_ENTRY entry = (XBE_ENTRY)(ULONG_PTR)param;
+        entry();
+    }
     return 0;
 }
 
@@ -206,8 +361,10 @@ int __cdecl wmain( int argc, WCHAR **argv )
     HMODULE hKrnl;
     HANDLE thread;
     DWORD exit_code;
+    char msgbuf[128];
 
-    if (argc < 2) xbe_fatal( "usage: winexbe.exe <file.xbe>" );
+    if (argc < 2) xbe_fatal( "usage: winexbe.exe <file.xbe> [args...]\n"
+                             "  Extra args are forwarded to the title via the command line." );
 
     file = CreateFileW( argv[1], GENERIC_READ, FILE_SHARE_READ, NULL,
                         OPEN_EXISTING, 0, 0 );
@@ -245,15 +402,62 @@ int __cdecl wmain( int argc, WCHAR **argv )
     if (!map_xbe_sections( file, hdr->base_addr, hdr->sizeof_image, sections, hdr->sections ))
         xbe_fatal( "failed to map XBE sections" );
 
+    /* Library versions (informational, Cxbx logs these at load) */
+    {
+        const struct xbe_library_version *libs = (const struct xbe_library_version *)
+            xbe_va( hdr_buf, read, hdr->base_addr, hdr->library_versions_addr,
+                    hdr->library_versions * sizeof(struct xbe_library_version) );
+        DWORD n;
+        char libmsg[64];
+        UINT32 i;
+        if (libs)
+        {
+            for (i = 0; i < hdr->library_versions; i++)
+            {
+                int k;
+                for (k = 0; k < 8 && libs[i].name[k]; k++) libmsg[k] = libs[i].name[k];
+                libmsg[k] = 0;
+                /* keep it to stderr diagnostics; titles must not depend on this */
+                WriteFile( GetStdHandle(STD_ERROR_HANDLE), "winexbe: lib ", 12, &n, NULL );
+                WriteFile( GetStdHandle(STD_ERROR_HANDLE), libmsg, k, &n, NULL );
+                WriteFile( GetStdHandle(STD_ERROR_HANDLE), "\n", 1, &n, NULL );
+            }
+        }
+    }
+
     CloseHandle( file );
+
+    /* Initialise TLS before any title code runs (needs mapped image) */
+    if (hdr->tls_addr)
+        init_xbe_tls( hdr->tls_addr );
+
     HeapFree( GetProcessHeap(), 0, hdr_buf );
 
     /* Load xboxkrnl.exe and resolve kernel thunks */
     hKrnl = LoadLibraryW( L"xboxkrnl.exe" );
     if (!hKrnl) xbe_fatal( "cannot load xboxkrnl.exe" );
 
+    /* Publish the image path for titles that read XeImageFileName */
+    publish_image_file_name( hKrnl, argv[1] );
+
     if (kernel_thunk_addr)
-        resolve_kernel_thunks( (UINT32 *)(ULONG_PTR)kernel_thunk_addr, hKrnl );
+    {
+        if (!resolve_kernel_thunks( (UINT32 *)(ULONG_PTR)kernel_thunk_addr, hKrnl ))
+        {
+            wsprintfA( msgbuf, "winexbe: unresolvable xboxkrnl ordinal %u; "
+                       "title needs a kernel export WineEX does not implement yet",
+                       xbe_unresolved_ordinal );
+            xbe_fatal( msgbuf );
+        }
+    }
+
+    /* Non-kernel imports (xbdm etc. on devkit titles) */
+    if (hdr->nonkernel_import_dir_addr)
+    {
+        if (!resolve_nonkernel_imports( hdr->nonkernel_import_dir_addr ))
+            xbe_fatal( "winexbe: failed to resolve non-kernel imports "
+                       "(missing title DLL, e.g. xbdm.dll?)" );
+    }
 
     /* Launch the XBE entry point on a new thread */
     thread = CreateThread( NULL, hdr->pe_stack_commit ? hdr->pe_stack_commit : 0x10000,

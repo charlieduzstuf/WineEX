@@ -80,11 +80,27 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, LPVOID reserved)
 
 /***********************************************************************
  *   D3D10CreateBlob  (d3d11_x.@)
+ *
+ * Xbox ERA titles call this for shader/pipeline blobs; the implementation
+ * is identical to PC d3dcompiler's D3DCreateBlob (WinDurango forwards it
+ * the same way). Forward dynamically so d3d11_x has no hard d3dcompiler
+ * dependency.
  */
 HRESULT WINAPI D3D10CreateBlob(SIZE_T size, ID3DBlob **ppBlob)
 {
-    FIXME("size %lu, ppBlob %p stub!\n", size, ppBlob);
-    return E_NOTIMPL;
+    static HRESULT (WINAPI *p_D3DCreateBlob)(SIZE_T, ID3DBlob **);
+
+    TRACE("size %lu, ppBlob %p\n", size, ppBlob);
+
+    if (!p_D3DCreateBlob)
+    {
+        HMODULE hcomp = LoadLibraryA("d3dcompiler_47.dll");
+        if (!hcomp) hcomp = LoadLibraryA("d3dcompiler_43.dll");
+        if (!hcomp) return E_FAIL;
+        p_D3DCreateBlob = (void *)GetProcAddress(hcomp, "D3DCreateBlob");
+        if (!p_D3DCreateBlob) return E_FAIL;
+    }
+    return p_D3DCreateBlob(size, ppBlob);
 }
 
 /***********************************************************************

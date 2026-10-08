@@ -35,10 +35,10 @@ BYTE XBOXKRNL_IoCompletionObjectType[64]; /* OBJECT_TYPE - object manager not im
 BYTE XBOXKRNL_IoDeviceObjectType[64]; /* OBJECT_TYPE - object manager not implemented */
 BYTE XBOXKRNL_IoFileObjectType[64]; /* OBJECT_TYPE - object manager not implemented */
 BYTE XBOXKRNL_MmGlobalData[128]; /* MMGLOBALDATA - memory manager not implemented */
-BYTE XBOXKRNL_KeInterruptTime[12]; /* KSYSTEM_TIME (LowPart/High1Time/High2Time) */
-BYTE XBOXKRNL_KeSystemTime[12]; /* KSYSTEM_TIME (LowPart/High1Time/High2Time) */
-ULONG XBOXKRNL_KeTickCount;
-ULONG XBOXKRNL_KeTimeIncrement;
+BYTE XBOXKRNL_KeInterruptTime[12]; /* KSYSTEM_TIME (LowPart/High1Time/High2Time) — refreshed by the ticker thread (xbox_tick_init in keirql_misc.c) */
+BYTE XBOXKRNL_KeSystemTime[12]; /* KSYSTEM_TIME (LowPart/High1Time/High2Time) — refreshed by the ticker thread */
+ULONG XBOXKRNL_KeTickCount; /* incremented every 10 ms by the ticker thread */
+ULONG XBOXKRNL_KeTimeIncrement; /* set to 100000 (10 ms in 100-ns units) by xbox_tick_init */
 ULONG_PTR XBOXKRNL_KiBugCheckData[5];
 void * XBOXKRNL_LaunchDataPage; /* PLAUNCH_DATA_PAGE, unpopulated */
 BYTE XBOXKRNL_ObDirectoryObjectType[64]; /* OBJECT_TYPE - object manager not implemented */
@@ -48,7 +48,7 @@ BYTE XBOXKRNL_PsThreadObjectType[64]; /* OBJECT_TYPE - object manager not implem
 BYTE XBOXKRNL_XboxEEPROMKey[16]; /* XBOX_KEY_DATA */
 BYTE XBOXKRNL_XboxHardwareInfo[8]; /* XBOX_HARDWARE_INFO {ULONG Flags; UCHAR GpuRevision,McpRevision,Unk3,Unk4;} */
 BYTE XBOXKRNL_XboxHDKey[16]; /* XBOX_KEY_DATA */
-USHORT XBOXKRNL_XboxKrnlVersion[4]; /* XBOX_KRNL_VERSION {Major,Minor,Build,Qfe} */
+USHORT XBOXKRNL_XboxKrnlVersion[4] = { 1, 0, 5960, 1 }; /* XBOX_KRNL_VERSION {Major,Minor,Build,Qfe}: final retail kernel 1.00.5960.01. Titles gate features on this (cf. kernelx.dll reporting 10.0.10586 for the same reason); homebrew built against any XDK runs under the final kernel. */
 BYTE XBOXKRNL_XboxSignatureKey[16]; /* XBOX_KEY_DATA */
 STRING XBOXKRNL_XeImageFileName; /* OBJECT_STRING == STRING, unpopulated */
 BYTE XBOXKRNL_XboxLANKey[16]; /* XBOX_KEY_DATA */

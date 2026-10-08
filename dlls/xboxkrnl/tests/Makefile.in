@@ -1,0 +1,5 @@
+TESTDLL   = xboxkrnl.exe
+IMPORTS   = kernel32
+
+SOURCES = \
+	xboxkrnl.c

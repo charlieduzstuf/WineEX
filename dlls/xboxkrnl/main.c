@@ -41,6 +41,8 @@ WINE_DEFAULT_DEBUG_CHANNEL(xboxkrnl);
 
 extern void xbox_sync_init(void);
 extern void xbox_sync_fini(void);
+extern void xbox_tick_init(void);
+extern void xbox_tick_fini(void);
 
 /* ntdll exports this (see dlls/ntdll/ntdll.spec) but Wine's own winternl.h
  * doesn't declare the plain unicode-to-unicode overload (only the
@@ -599,9 +601,10 @@ BOOL WINAPI DllMain( HINSTANCE inst, DWORD reason, void *reserved )
     case DLL_PROCESS_ATTACH:
         DisableThreadLibraryCalls( inst );
         xbox_sync_init();
+        xbox_tick_init();
         break;
     case DLL_PROCESS_DETACH:
-        if (!reserved) xbox_sync_fini();
+        if (!reserved) { xbox_tick_fini(); xbox_sync_fini(); }
         break;
     }
     return TRUE;

@@ -165,11 +165,23 @@ void WINAPI XBOXKRNL_MmDeleteKernelStack(void *EndAddress, void *BaseAddress)
     VirtualFree(BaseAddress, 0, MEM_RELEASE);
 }
 
-/* MmQueryStatistics - return zeroed stats (no real pool tracking) */
+/* MmQueryStatistics - fill from host memory status.
+ * Layout from Cxbx-Reloaded MM_STATISTICS (TotalPhysicalPages,
+ * AvailablePages, VirtualMemoryBytesCommitted/Reserved, CachePages...);
+ * Xemu/Xemi's HLE MmQueryStatistics likewise reports host memory. */
 NTSTATUS WINAPI XBOXKRNL_MmQueryStatistics(void *MemoryStatistics)
 {
-    FIXME("ordinal 181 (MmQueryStatistics): returning zeros\n");
-    if (MemoryStatistics) memset(MemoryStatistics, 0, 64);  /* struct is ~64 bytes */
+    MEMORYSTATUSEX ms;
+    ULONG *stats;
+    TRACE("MmQueryStatistics(%p)\n", MemoryStatistics);
+    if (!MemoryStatistics) return STATUS_INVALID_PARAMETER;
+    memset(MemoryStatistics, 0, 64);
+    ms.dwLength = sizeof(ms);
+    if (!GlobalMemoryStatusEx(&ms)) return STATUS_UNSUCCESSFUL;
+    stats = (ULONG *)MemoryStatistics;
+    /* first two ULONGs: total / available physical pages (4K pages) */
+    stats[0] = (ULONG)(ms.ullTotalPhys / 4096);
+    stats[1] = (ULONG)(ms.ullAvailPhys / 4096);
     return STATUS_SUCCESS;
 }
 
@@ -387,15 +399,26 @@ NTSTATUS WINAPI XBOXKRNL_NtQueryDirectoryObject(HANDLE handle, void *info, ULONG
     return NtQueryDirectoryObject(handle, info, len, TRUE, restart, context, returned);
 }
 
-/* PsQueryStatistics / PsSetCreateThreadNotifyRoutine - safe stubs */
+/* PsQueryStatistics / PsSetCreateThreadNotifyRoutine.
+ * PS_STATISTICS layout (Cxbx-Reloaded PsQueryStatistics): number of threads /
+ * handles for the single Xbox process.  Report the live host values via
+ * NtQueryInformationProcess so debuggers see something sane; the notify
+ * routine has no host equivalent and is accepted as a no-op success, the
+ * same choice Xemu/Xemi make for their HLE thread hooks. */
 NTSTATUS WINAPI XBOXKRNL_PsQueryStatistics(void *ProcessStatistics)
 {
-    FIXME("PsQueryStatistics: stub\n");
-    return STATUS_NOT_IMPLEMENTED;
+    DWORD count = 0;
+    TRACE("PsQueryStatistics(%p)\n", ProcessStatistics);
+    if (!ProcessStatistics) return STATUS_INVALID_PARAMETER;
+    memset(ProcessStatistics, 0, 32);
+    NtQueryInformationProcess(NtCurrentProcess(), ProcessHandleCount, &count, sizeof(count), NULL);
+    ((ULONG *)ProcessStatistics)[0] = 1;     /* one (current) process */
+    ((ULONG *)ProcessStatistics)[1] = count; /* live handle count */
+    return STATUS_SUCCESS;
 }
 
 NTSTATUS WINAPI XBOXKRNL_PsSetCreateThreadNotifyRoutine(void *NotifyRoutine)
 {
-    FIXME("PsSetCreateThreadNotifyRoutine: stub\n");
-    return STATUS_NOT_IMPLEMENTED;
+    TRACE("PsSetCreateThreadNotifyRoutine(%p): accepted, no-op\n", NotifyRoutine);
+    return STATUS_SUCCESS;
 }

@@ -51,9 +51,23 @@ struct delete_context_params
     UINT64 context;
 };
 
+struct export_context_params
+{
+    UINT64 *context;
+    BYTE *buf;
+    ULONG *size;
+};
+
 struct free_credentials_handle_params
 {
     UINT64 credential;
+};
+
+struct import_context_params
+{
+    BYTE *buf;
+    ULONG size;
+    UINT64 *context;
 };
 
 struct initialize_context_params
@@ -127,11 +141,12 @@ struct verify_signature_params
 
 enum unix_funcs
 {
-    unix_process_attach,
     unix_accept_context,
     unix_acquire_credentials_handle,
     unix_delete_context,
+    unix_export_context,
     unix_free_credentials_handle,
+    unix_import_context,
     unix_initialize_context,
     unix_make_signature,
     unix_query_context_attributes,

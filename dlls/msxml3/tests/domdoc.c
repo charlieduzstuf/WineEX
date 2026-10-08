@@ -812,6 +812,9 @@ static const char shift_jis_xml[] =
 static const char shift_jis_xml2[] =
     "<?xml version=\"1.0\" encoding=\"shift-jis\" ?><a>" "\x83\x89" "</a>";
 
+static const WCHAR unicode_xml[] =
+    L"\xfeff<?xml version=\"1.0\" encoding=\"unicode\" ?><u></u>";
+
 static const char nocontent[] = "no xml content here";
 
 static const char szExampleXML[] =
@@ -5430,6 +5433,17 @@ static void test_XPath(void)
         "    </elem>"
         "</root>";
 
+    static const char ns[] =
+        "<?xml version='1.0' encoding='utf-8'?>"
+        "<root xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">"
+        "    <elem>"
+        "       <inner xsi:type=\"foo\" />"
+        "    </elem>"
+        "    <elem>"
+        "       <inner xsi:type=\"bar\" />"
+        "    </elem>"
+        "</root>";
+
     static const struct query_test node_value_cmp_test[] =
     {
         { "//elem[@min <= 0 and @max >= 0]", "E1.E2.D1 E3.E2.D1" },
@@ -5452,6 +5466,15 @@ static void test_XPath(void)
         { "//elem/processing-instruction('pi')", "P1.E1.E2.D1" },
         { "//elem/processing-instruction(\"pi2\")", "P1.E2.E2.D1" },
         { "//elem/processing-instruction(\'*\')", "" },
+        { NULL },
+    };
+
+    static const struct query_test ns_test[] =
+    {
+        { "//*[@xsi:type='foo']", "E1.E1.E2.D1" },
+        { "//*[@xsi:type='bar']", "E1.E2.E2.D1" },
+        { "//*[@xsi:type='foobar']", "" },
+        { "//*[@xsi:type]", "E1.E1.E2.D1 E1.E2.E2.D1" },
         { NULL },
     };
 
@@ -5877,6 +5900,24 @@ static void test_XPath(void)
         ptr++;
         free_bstrs();
     }
+
+    doc = create_document(&IID_IXMLDOMDocument2);
+
+    hr = IXMLDOMDocument2_loadXML(doc, _bstr_(ns), NULL);
+    ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+
+    for (xptest = ns_test; xptest->query; xptest++)
+    {
+        winetest_push_context("Test %s", xptest->query);
+
+        hr = IXMLDOMDocument2_selectNodes(doc, _bstr_(xptest->query), &list);
+        test_query_result(xptest, list, hr);
+        if (list)
+            IXMLDOMNodeList_Release(list);
+
+        winetest_pop_context();
+    }
+    IXMLDOMDocument2_Release(doc);
 
     free_bstrs();
 }
@@ -9610,8 +9651,9 @@ static void test_get_xml(void)
 static void test_xsltemplate(void)
 {
     IXMLDOMDocument *doc, *doc2, *doc3;
-    IXSLTemplate *template;
+    IXSLTemplate *template, *template2;
     IXSLProcessor *processor;
+    IXMLDOMNode *node;
     IStream *stream;
     VARIANT_BOOL b;
     HRESULT hr;
@@ -9629,6 +9671,14 @@ static void test_xsltemplate(void)
     /* works as reset */
     hr = IXSLTemplate_putref_stylesheet(template, NULL);
     ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+
+    hr = IXSLTemplate_get_stylesheet(template, NULL);
+    ok(hr == E_INVALIDARG, "Unexpected hr %#lx.\n", hr);
+
+    node = (void *)1;
+    hr = IXSLTemplate_get_stylesheet(template, &node);
+    ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+    ok(!node, "Unexpected node %p.\n", node);
 
     doc = create_document(&IID_IXMLDOMDocument);
 
@@ -9674,6 +9724,10 @@ static void test_xsltemplate(void)
     ref2 = IXMLDOMDocument_AddRef(doc);
     IXMLDOMDocument_Release(doc);
     ok(ref2 > ref1, "got %ld\n", ref2);
+    hr = IXSLTemplate_get_stylesheet(template, &node);
+    ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+    ok(node == (IXMLDOMNode *)doc, "Unexpected node %p.\n", node);
+    IXMLDOMNode_Release(node);
 
     /* processor */
     hr = IXSLTemplate_createProcessor(template, NULL);
@@ -9683,6 +9737,13 @@ static void test_xsltemplate(void)
     hr = IXSLTemplate_createProcessor(template, &processor);
     ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
     EXPECT_REF(template, 2);
+
+    hr = IXSLProcessor_get_ownerTemplate(processor, NULL);
+    ok(hr == E_INVALIDARG, "Unexpected hr %#lx.\n", hr);
+    hr = IXSLProcessor_get_ownerTemplate(processor, &template2);
+    ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+    ok(template == template2, "Unexpected template %p.\n", template2);
+    IXSLTemplate_Release(template2);
 
     /* input no set yet */
     V_VT(&v) = VT_BSTR;
@@ -11407,6 +11468,21 @@ static void write_to_file(const char *name, const char *data)
     CloseHandle(hfile);
 }
 
+static void write_to_file_w(const char *name, const WCHAR *data)
+{
+    DWORD written;
+    HANDLE hfile;
+    BOOL ret;
+
+    hfile = CreateFileA(name, GENERIC_WRITE|GENERIC_READ, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL );
+    ok(hfile != INVALID_HANDLE_VALUE, "failed to create test file: %s\n", name);
+
+    ret = WriteFile(hfile, data, wcslen(data) * sizeof(*data), &written, NULL);
+    ok(ret, "WriteFile failed: %s, %ld\n", name, GetLastError());
+
+    CloseHandle(hfile);
+}
+
 #define TEST_DOC_LOAD_FROM_PATH(doc,path,expected_hr, expected_ret) \
     _test_doc_load_from_path(doc, path, expected_hr, expected_ret, __LINE__)
 static void _test_doc_load_from_path(IXMLDOMDocument *doc, const char *path,
@@ -11737,6 +11813,29 @@ static void test_load(void)
     ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
     ok(!wcscmp(bstr1, L"\u30e9"), "Unexpected text %s.\n", debugstr_w(bstr1));
     SysFreeString(bstr1);
+    DeleteFileA(path);
+    IXMLDOMDocument_Release(doc);
+
+    /* The 'unicode' encoding */
+    GetTempPathA(MAX_PATH, path);
+    strcat(path, "unicode.xml");
+    write_to_file_w(path, unicode_xml);
+
+    doc = create_document(&IID_IXMLDOMDocument);
+    V_VT(&src) = VT_BSTR;
+    V_BSTR(&src) = _bstr_(path);
+    hr = IXMLDOMDocument_load(doc, src, &b);
+    ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+
+    DeleteFileA(path);
+
+    GetTempPathA(MAX_PATH, path);
+    strcat(path, "saved-unicode.xml");
+    V_VT(&src) = VT_BSTR;
+    V_BSTR(&src) = _bstr_(path);
+    hr = IXMLDOMDocument_save(doc, src);
+    ok(hr == S_OK, "Unexpected hr %#lx.\n", hr);
+
     DeleteFileA(path);
     IXMLDOMDocument_Release(doc);
 
@@ -14235,7 +14334,6 @@ static HRESULT WINAPI transformdest_QueryInterface(IUnknown *iface, REFIID riid,
         IsEqualIID(riid, &IID_ISequentialStream) ||
         IsEqualIID(riid, &IID_IResponse);
 
-    todo_wine_if(IsEqualIID(riid, &IID_IXMLDOMDocument))
     ok(known_iid, "Unexpected riid %s\n", wine_dbgstr_guid(riid));
 
     return E_NOINTERFACE;

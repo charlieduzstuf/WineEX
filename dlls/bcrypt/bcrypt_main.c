@@ -122,6 +122,7 @@ enum chain_mode
 
 enum ecc_curve_id
 {
+    ECC_CURVE_INVALID = -1,
     ECC_CURVE_NONE,
     ECC_CURVE_25519,
     ECC_CURVE_BRAINPOOLP256R1,
@@ -135,10 +136,9 @@ struct algorithm
 {
     struct object     hdr;
     enum alg_id       id;
-    enum chain_mode   mode;
+    enum chain_mode   chain_mode;
     ULONG             flags;
     enum ecc_curve_id curve_id;
-    enum chain_mode   chain_mode;
 };
 
 struct aes_key
@@ -940,14 +940,14 @@ static NTSTATUS get_alg_property( const struct algorithm *alg, const WCHAR *prop
     switch (alg->id)
     {
     case ALG_ID_3DES:
-        return get_3des_property( alg->mode, prop, buf, size, ret_size );
+        return get_3des_property( alg->chain_mode, prop, buf, size, ret_size );
 
     case ALG_ID_CHACHA20_POLY1305:
         return get_chacha20_poly1305_property( prop, buf, size, ret_size );
 
     case ALG_ID_AES:
     case ALG_ID_AES_GMAC:
-        return get_aes_property( alg->mode, prop, buf, size, ret_size );
+        return get_aes_property( alg->chain_mode, prop, buf, size, ret_size );
 
     case ALG_ID_RC4:
         return get_rc4_property( prop, buf, size, ret_size );
@@ -986,7 +986,7 @@ static NTSTATUS set_alg_property( struct algorithm *alg, const WCHAR *prop, UCHA
             TRACE( "mode %s\n", debugstr_w((WCHAR *)value) );
             if (!wcscmp( (WCHAR *)value, BCRYPT_CHAIN_MODE_CBC ))
             {
-                alg->mode = CHAIN_MODE_CBC;
+                alg->chain_mode = CHAIN_MODE_CBC;
                 return STATUS_SUCCESS;
             }
             else
@@ -1015,22 +1015,22 @@ static NTSTATUS set_alg_property( struct algorithm *alg, const WCHAR *prop, UCHA
             TRACE( "mode %s\n", debugstr_w((WCHAR *)value) );
             if (!wcscmp( (WCHAR *)value, BCRYPT_CHAIN_MODE_ECB ))
             {
-                alg->mode = CHAIN_MODE_ECB;
+                alg->chain_mode = CHAIN_MODE_ECB;
                 return STATUS_SUCCESS;
             }
             else if (!wcscmp( (WCHAR *)value, BCRYPT_CHAIN_MODE_CBC ))
             {
-                alg->mode = CHAIN_MODE_CBC;
+                alg->chain_mode = CHAIN_MODE_CBC;
                 return STATUS_SUCCESS;
             }
             else if (!wcscmp( (WCHAR *)value, BCRYPT_CHAIN_MODE_GCM ))
             {
-                alg->mode = CHAIN_MODE_GCM;
+                alg->chain_mode = CHAIN_MODE_GCM;
                 return STATUS_SUCCESS;
             }
             else if (!wcscmp( (WCHAR *)value, BCRYPT_CHAIN_MODE_CFB ))
             {
-                alg->mode = CHAIN_MODE_CFB;
+                alg->chain_mode = CHAIN_MODE_CFB;
                 return STATUS_SUCCESS;
             }
             else
@@ -1696,7 +1696,7 @@ static NTSTATUS generate_symmetric_key( const struct algorithm *alg, const UCHAR
     case ALG_ID_AES:
     case ALG_ID_AES_GMAC:
         if ((status = validate_len_aes( &key_lengths, secret_len, &secret_len )) ||
-            (status = alloc_aes_key( key, alg->mode, BLOCK_LENGTH_AES, secret, secret_len )))
+            (status = alloc_aes_key( key, alg->chain_mode, BLOCK_LENGTH_AES, secret, secret_len )))
         {
             destroy_key( key );
             return status;
@@ -1920,25 +1920,24 @@ static NTSTATUS decrypt_rsa( const struct key *key, const UCHAR *input, ULONG in
                              UCHAR *output, ULONG output_len, ULONG *ret_len, ULONG flags )
 {
     SIZE_T size = len_from_bitlen( key->a.bitlen );
+    SYMCRYPT_ERROR error;
 
+    if (input_len < size) return STATUS_INVALID_PARAMETER;
     if (!flags || flags == BCRYPT_PAD_NONE)
     {
-        if (input_len % size) return STATUS_INVALID_PARAMETER;
-
-        *ret_len = size;
         if (output_len < size)
         {
+            *ret_len = size;
             if (output) return STATUS_BUFFER_TOO_SMALL;
             return STATUS_SUCCESS;
         }
-        if (SymCryptRsaRawDecrypt( key->a.rsa.handle, input, input_len, SYMCRYPT_NUMBER_FORMAT_MSB_FIRST, 0, output,
-                                   output_len )) return STATUS_INTERNAL_ERROR;
+        error = SymCryptRsaRawDecrypt( key->a.rsa.handle, input, size, SYMCRYPT_NUMBER_FORMAT_MSB_FIRST, 0, output,
+                                       size );
     }
     else if (flags == BCRYPT_PAD_PKCS1)
     {
-        if (SymCryptRsaPkcs1Decrypt( key->a.rsa.handle, input, input_len, SYMCRYPT_NUMBER_FORMAT_MSB_FIRST, 0, output,
-                                     output_len, &size )) return STATUS_INTERNAL_ERROR;
-        *ret_len = size;
+        error = SymCryptRsaPkcs1Decrypt( key->a.rsa.handle, input, size, SYMCRYPT_NUMBER_FORMAT_MSB_FIRST,
+                                         0, output, output_len, &size );
     }
     else if (flags == BCRYPT_PAD_OAEP)
     {
@@ -1948,10 +1947,8 @@ static NTSTATUS decrypt_rsa( const struct key *key, const UCHAR *input, ULONG in
         if (!pad) return STATUS_INVALID_PARAMETER;
         hash_desc = get_hash_from_str( pad->pszAlgId );
 
-        if (SymCryptRsaOaepDecrypt( key->a.rsa.handle, input, input_len, SYMCRYPT_NUMBER_FORMAT_MSB_FIRST, hash_desc,
-                                    pad->pbLabel, pad->cbLabel, 0, output, output_len, &size ))
-            return STATUS_INTERNAL_ERROR;
-        *ret_len = size;
+        error = SymCryptRsaOaepDecrypt( key->a.rsa.handle, input, size, SYMCRYPT_NUMBER_FORMAT_MSB_FIRST, hash_desc,
+                                        pad->pbLabel, pad->cbLabel, 0, output, output_len, &size );
     }
     else
     {
@@ -1959,6 +1956,13 @@ static NTSTATUS decrypt_rsa( const struct key *key, const UCHAR *input, ULONG in
         return STATUS_NOT_SUPPORTED;
     }
 
+    if (error == SYMCRYPT_BUFFER_TOO_SMALL)
+    {
+        *ret_len = size;
+        return STATUS_BUFFER_TOO_SMALL;
+    }
+    if (error) return STATUS_INVALID_PARAMETER;
+    *ret_len = size;
     return STATUS_SUCCESS;
 }
 
@@ -2082,7 +2086,8 @@ static NTSTATUS import_key( const struct algorithm *alg, const struct key *decry
         if (!decrypt_key || input_len < 8) return STATUS_INVALID_PARAMETER;
 
         len = input_len - 8;
-        if (len < BLOCK_LENGTH_AES || len & (BLOCK_LENGTH_AES - 1)) return STATUS_INVALID_PARAMETER;
+        if (len < BLOCK_LENGTH_AES || len > sizeof(output) || len & (BLOCK_LENGTH_AES - 1))
+            return STATUS_INVALID_PARAMETER;
 
         if ((status = unwrap_aes( decrypt_key->s.secret, decrypt_key->s.secret_len, input, len, output )))
             return status;
@@ -2265,12 +2270,12 @@ static NTSTATUS encrypt_rsa( const struct key *key, const UCHAR *input, ULONG in
         if (input_len % size) return STATUS_INVALID_PARAMETER;
 
         if (SymCryptRsaRawEncrypt( key->a.rsa.handle, input, input_len, SYMCRYPT_NUMBER_FORMAT_MSB_FIRST, 0, output,
-                                   output_len )) return STATUS_INTERNAL_ERROR;
+                                   size )) return STATUS_INTERNAL_ERROR;
     }
     else if (flags == BCRYPT_PAD_PKCS1)
     {
         if (SymCryptRsaPkcs1Encrypt( key->a.rsa.handle, input, input_len, SYMCRYPT_NUMBER_FORMAT_MSB_FIRST, 0, output,
-                                     output_len, &size )) return STATUS_INTERNAL_ERROR;
+                                     size, &size )) return STATUS_INTERNAL_ERROR;
         *ret_len = size;
     }
     else if (flags == BCRYPT_PAD_OAEP)
@@ -2287,7 +2292,7 @@ static NTSTATUS encrypt_rsa( const struct key *key, const UCHAR *input, ULONG in
             label_len = pad->cbLabel;
         }
         if (SymCryptRsaOaepEncrypt( key->a.rsa.handle, input, input_len, hash_desc, label, label_len, 0,
-                                    SYMCRYPT_NUMBER_FORMAT_MSB_FIRST, output, output_len, &size ))
+                                    SYMCRYPT_NUMBER_FORMAT_MSB_FIRST, output, size, &size ))
             return STATUS_INTERNAL_ERROR;
         *ret_len = size;
     }
@@ -2895,59 +2900,59 @@ static enum ecc_curve_id get_ecc_blob_curve( enum alg_id alg, const BCRYPT_ECCKE
     {
     case ALG_ID_ECDH:
         if (blob->dwMagic == BCRYPT_ECDH_PRIVATE_GENERIC_MAGIC) *flags = KEY_FLAG_PRIVATE;
-        else if (blob->dwMagic != BCRYPT_ECDH_PUBLIC_GENERIC_MAGIC) return FALSE;
+        else if (blob->dwMagic != BCRYPT_ECDH_PUBLIC_GENERIC_MAGIC) return ECC_CURVE_NONE;
         break;
 
     case ALG_ID_ECDH_P256:
         if (blob->dwMagic == BCRYPT_ECDH_PRIVATE_P256_MAGIC) *flags = KEY_FLAG_PRIVATE;
-        else if (blob->dwMagic != BCRYPT_ECDH_PUBLIC_P256_MAGIC) return STATUS_INVALID_PARAMETER;
+        else if (blob->dwMagic != BCRYPT_ECDH_PUBLIC_P256_MAGIC) return ECC_CURVE_INVALID;
         curve_id = ECC_CURVE_P256R1;
         *size = 32;
         break;
 
     case ALG_ID_ECDH_P384:
         if (blob->dwMagic == BCRYPT_ECDH_PRIVATE_P384_MAGIC) *flags = KEY_FLAG_PRIVATE;
-        else if (blob->dwMagic != BCRYPT_ECDH_PUBLIC_P384_MAGIC) return STATUS_INVALID_PARAMETER;
+        else if (blob->dwMagic != BCRYPT_ECDH_PUBLIC_P384_MAGIC) return ECC_CURVE_INVALID;
         curve_id = ECC_CURVE_P384R1;
         *size = 48;
         break;
 
     case ALG_ID_ECDH_P521:
         if (blob->dwMagic == BCRYPT_ECDH_PRIVATE_P521_MAGIC) *flags = KEY_FLAG_PRIVATE;
-        else if (blob->dwMagic != BCRYPT_ECDH_PUBLIC_P521_MAGIC) return STATUS_INVALID_PARAMETER;
+        else if (blob->dwMagic != BCRYPT_ECDH_PUBLIC_P521_MAGIC) return ECC_CURVE_INVALID;
         curve_id = ECC_CURVE_P521R1;
         *size = 66;
         break;
 
     case ALG_ID_ECDSA:
         if (blob->dwMagic == BCRYPT_ECDSA_PRIVATE_GENERIC_MAGIC) *flags = KEY_FLAG_PRIVATE;
-        else if (blob->dwMagic != BCRYPT_ECDSA_PUBLIC_GENERIC_MAGIC) return STATUS_INVALID_PARAMETER;
+        else if (blob->dwMagic != BCRYPT_ECDSA_PUBLIC_GENERIC_MAGIC) return ECC_CURVE_NONE;
         break;
 
     case ALG_ID_ECDSA_P256:
         if (blob->dwMagic == BCRYPT_ECDSA_PRIVATE_P256_MAGIC) *flags = KEY_FLAG_PRIVATE;
-        else if (blob->dwMagic != BCRYPT_ECDSA_PUBLIC_P256_MAGIC) return STATUS_INVALID_PARAMETER;
+        else if (blob->dwMagic != BCRYPT_ECDSA_PUBLIC_P256_MAGIC) return ECC_CURVE_INVALID;
         curve_id = ECC_CURVE_P256R1;
         *size = 32;
         break;
 
     case ALG_ID_ECDSA_P384:
         if (blob->dwMagic == BCRYPT_ECDSA_PRIVATE_P384_MAGIC) *flags = KEY_FLAG_PRIVATE;
-        else if (blob->dwMagic != BCRYPT_ECDSA_PUBLIC_P384_MAGIC) return STATUS_INVALID_PARAMETER;
+        else if (blob->dwMagic != BCRYPT_ECDSA_PUBLIC_P384_MAGIC) return ECC_CURVE_INVALID;
         curve_id = ECC_CURVE_P384R1;
         *size = 48;
         break;
 
     case ALG_ID_ECDSA_P521:
         if (blob->dwMagic == BCRYPT_ECDSA_PRIVATE_P521_MAGIC) *flags = KEY_FLAG_PRIVATE;
-        else if (blob->dwMagic != BCRYPT_ECDSA_PUBLIC_P521_MAGIC) return STATUS_INVALID_PARAMETER;
+        else if (blob->dwMagic != BCRYPT_ECDSA_PUBLIC_P521_MAGIC) return ECC_CURVE_INVALID;
         curve_id = ECC_CURVE_P521R1;
         *size = 66;
         break;
 
     default:
         ERR( "unhandled algorithm %u\n", alg );
-        return 0;
+        return ECC_CURVE_INVALID;
     }
     return curve_id;
 }
@@ -3162,7 +3167,7 @@ static NTSTATUS import_ecc_key( enum alg_id alg, enum ecc_curve_id curve, const 
 
     if (input_len < sizeof(*blob)) return STATUS_INVALID_PARAMETER;
     if (!(blob_curve = get_ecc_blob_curve( alg, blob, &key_size, &key_flags ))) blob_curve = curve;
-    if (blob_curve != curve) return STATUS_INVALID_PARAMETER;
+    if (blob_curve == ECC_CURVE_INVALID) return STATUS_INVALID_PARAMETER;
 
     size = sizeof(*blob) + blob->cbKey * 2;
     if (key_flags & KEY_FLAG_PRIVATE)
@@ -4004,8 +4009,8 @@ NTSTATUS WINAPI BCryptDeriveKeyCapi( BCRYPT_HASH_HANDLE handle, BCRYPT_ALG_HANDL
 
     TRACE( "%p, %p, %p, %lu, %#lx\n", handle, halg, key, keylen, flags );
 
-    if (!key || !keylen || keylen > hash->len * 2) return STATUS_INVALID_PARAMETER;
     if (!hash) return STATUS_INVALID_HANDLE;
+    if (!key || !keylen || keylen > hash->len * 2) return STATUS_INVALID_PARAMETER;
     if (halg)
     {
         FIXME( "algorithm handle not supported\n" );

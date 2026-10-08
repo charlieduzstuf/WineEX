@@ -91,6 +91,7 @@ struct message
     unsigned int           data_size; /* size of message data */
     unsigned int           unique_id; /* unique id for nested hw message waits */
     struct message_result *result;    /* result in sender queue */
+    bool                   mergeable; /* message can be coalesced if eligible for that */
 };
 
 struct timer
@@ -104,6 +105,13 @@ struct timer
     lparam_t        lparam;    /* lparam for message */
 };
 
+struct attachment
+{
+    struct list entry;
+    struct msg_queue *queue_from;
+    struct msg_queue *queue_to;
+};
+
 struct thread_input
 {
     struct object          obj;           /* object header */
@@ -111,6 +119,7 @@ struct thread_input
     int                    caret_hide;    /* caret hide count */
     int                    caret_state;   /* caret on/off state */
     struct list            msg_list;      /* list of hardware messages */
+    struct list            attachments;
     timeout_t              user_time;     /* time of last user input */
     unsigned char          desktop_keystate[256]; /* desktop keystate when keystate was synced */
     input_shm_t           *shared;        /* thread input in session shared memory */
@@ -214,6 +223,7 @@ static struct thread_input *create_thread_input( struct desktop *desktop )
     {
         input->desktop = (struct desktop *)grab_object( desktop );
         list_init( &input->msg_list );
+        list_init( &input->attachments );
         input->user_time = 0;
         input->shared = NULL;
 
@@ -375,27 +385,56 @@ static void unlock_input_keystate( struct thread_input *input )
 static void assign_thread_input( struct msg_queue *queue, struct thread_input *new_input )
 {
     struct thread_input *old_input = queue->input;
+    user_handle_t new_focus = 0, new_active = 0;
+    struct thread *owner;
+
+    if (old_input == new_input) return;
+
+    if (old_input->shared->focus && (owner = get_window_thread( old_input->shared->focus )))
+    {
+        new_focus = owner->queue == queue ? old_input->shared->focus : 0;
+        release_object( owner );
+    }
+    if (old_input->shared->active && (owner = get_window_thread( old_input->shared->active )))
+    {
+        new_active = owner->queue == queue ? old_input->shared->active : 0;
+        release_object( owner );
+    }
 
     SHARED_WRITE_BEGIN( old_input->shared, input_shm_t )
     {
-        shared->cursor_count -= queue->cursor_count;
+        input_shm_t *old_shared = shared;
+
+        SHARED_WRITE_BEGIN( new_input->shared, input_shm_t )
+        {
+            input_shm_t *new_shared = shared;
+
+            if (!new_shared->focus) new_shared->focus = new_focus;
+            if (new_focus) old_shared->focus = 0;
+            if (!new_shared->active) new_shared->active = new_active;
+            if (new_active) old_shared->active = 0;
+
+            new_shared->cursor_count += queue->cursor_count;
+            old_shared->cursor_count -= queue->cursor_count;
+
+            memset( (void *)new_shared->keystate, 0, sizeof(new_shared->keystate) );
+            new_shared->keystate_serial = 1;
+        }
+        SHARED_WRITE_END;
     }
     SHARED_WRITE_END;
 
-    if (queue->keystate_lock) unlock_input_keystate( old_input );
+    if (queue->keystate_lock)
+    {
+        unlock_input_keystate( old_input );
+        lock_input_keystate( new_input );
+    }
 
     /* invalidate the old object to force clients to refresh their cached thread input */
     invalidate_shared_object( old_input->shared );
     release_object( old_input );
 
     queue->input = (struct thread_input *)grab_object( new_input );
-    if (queue->keystate_lock) lock_input_keystate( new_input );
-
-    SHARED_WRITE_BEGIN( new_input->shared, input_shm_t )
-    {
-        shared->cursor_count += queue->cursor_count;
-    }
-    SHARED_WRITE_END;
 }
 
 /* allocate a hardware message and its data */
@@ -414,6 +453,7 @@ static struct message *alloc_hardware_message( lparam_t info, struct hw_msg_sour
     memset( msg, 0, sizeof(*msg) );
     msg->type      = MSG_HARDWARE;
     msg->time      = time;
+    msg->mergeable = true;
     msg->data      = msg_data;
     msg->data_size = sizeof(*msg_data) + extra_size;
 
@@ -822,12 +862,14 @@ static int merge_mousemove( struct thread_input *input, const struct message *ms
     struct message *prev;
 
     if (!(prev = find_mouse_message( input, msg ))) return 0;
+    if (!prev->mergeable) return 0;
 
     prev->wparam  = msg->wparam;
     prev->lparam  = msg->lparam;
     prev->x       = msg->x;
     prev->y       = msg->y;
     prev->time    = msg->time;
+    prev->mergeable = msg->mergeable;
     if (msg->type == MSG_HARDWARE && prev->data && msg->data)
     {
         struct hardware_msg_data *prev_data = prev->data;
@@ -1250,6 +1292,7 @@ static void msg_queue_destroy( struct object *obj )
     struct list *ptr;
     struct hotkey *hotkey, *hotkey2;
     input_shm_t *input_shm = queue->input->shared;
+    struct attachment *attach, *next;
     int i;
 
     cleanup_results( queue );
@@ -1262,6 +1305,13 @@ static void msg_queue_destroy( struct object *obj )
             list_remove( &hotkey->entry );
             free( hotkey );
         }
+    }
+
+    LIST_FOR_EACH_ENTRY_SAFE( attach, next, &queue->input->attachments, struct attachment, entry )
+    {
+        if (attach->queue_from != queue && attach->queue_to != queue) continue;
+        list_remove( &attach->entry );
+        free( attach );
     }
 
     while ((ptr = list_head( &queue->pending_timers )))
@@ -1311,7 +1361,14 @@ static void thread_input_dump( struct object *obj, int verbose )
 static void thread_input_destroy( struct object *obj )
 {
     struct thread_input *input = (struct thread_input *)obj;
+    struct attachment *attach, *next;
     struct desktop *desktop;
+
+    LIST_FOR_EACH_ENTRY_SAFE( attach, next, &input->attachments, struct attachment, entry )
+    {
+        list_remove( &attach->entry );
+        free( attach );
+    }
 
     empty_msg_list( &input->msg_list );
     if ((desktop = input->desktop))
@@ -1374,85 +1431,51 @@ int init_thread_queue( struct thread *thread )
 /* attach two thread input data structures */
 void attach_thread_input( struct msg_queue *queue_from, struct msg_queue *queue_to )
 {
-    struct thread_input *input, *old_input;
-    input_shm_t *old_input_shm, *input_shm;
+    struct thread_input *old_input, *new_input = queue_to->input;
+    struct attachment *attach;
 
-    input = (struct thread_input *)grab_object( queue_to->input );
+    if (!(attach = mem_alloc( sizeof(*attach) ))) return;
+    attach->queue_from = queue_from;
+    attach->queue_to = queue_to;
 
-    old_input = queue_from->input;
-    old_input_shm = old_input->shared;
-    input_shm = input->shared;
+    old_input = (struct thread_input *)grab_object( queue_from->input );
+    list_add_tail( &old_input->attachments, &attach->entry );
 
-    SHARED_WRITE_BEGIN( input_shm, input_shm_t )
+    LIST_FOR_EACH_ENTRY( attach, &old_input->attachments, struct attachment, entry )
     {
-        if (!shared->active) shared->active = old_input_shm->active;
-        if (!shared->focus) shared->focus = old_input_shm->focus;
+        assign_thread_input( attach->queue_from, new_input );
+        assign_thread_input( attach->queue_to, new_input );
     }
-    SHARED_WRITE_END;
+    if (old_input != new_input) list_move_tail( &new_input->attachments, &old_input->attachments );
 
-    assign_thread_input( queue_from, input );
-
-    SHARED_WRITE_BEGIN( input->shared, input_shm_t )
-    {
-        memset( (void *)shared->keystate, 0, sizeof(shared->keystate) );
-        shared->keystate_serial = 1;
-    }
-    SHARED_WRITE_END;
-
-    release_object( input );
+    release_object( old_input );
 }
 
 /* detach two thread input data structures */
-void detach_thread_input( struct msg_queue *queue_from, struct desktop *desktop )
+void detach_thread_input( struct msg_queue *queue_from, struct msg_queue *queue_to, struct desktop *desktop )
 {
-    struct thread *thread;
-    struct thread_input *input, *old_input = queue_from->input;
+    struct thread_input *old_input = queue_from->input, *new_input;
+    struct attachment *attach, *next;
+    int count = 0;
 
-    if ((input = create_thread_input( desktop )))
+    LIST_FOR_EACH_ENTRY_SAFE( attach, next, &old_input->attachments, struct attachment, entry )
     {
-        input_shm_t *old_input_shm, *input_shm;
-        old_input_shm = old_input->shared;
-        input_shm = input->shared;
-
-        if (old_input_shm->focus && (thread = get_window_thread( old_input_shm->focus )))
-        {
-            if (thread->queue == queue_from)
-            {
-                SHARED_WRITE_BEGIN( old_input_shm, input_shm_t )
-                {
-                    input_shm_t *old_shared = shared;
-                    SHARED_WRITE_BEGIN( input_shm, input_shm_t )
-                    {
-                        shared->focus = old_shared->focus;
-                        old_shared->focus = 0;
-                    }
-                    SHARED_WRITE_END;
-                }
-                SHARED_WRITE_END;
-            }
-            release_object( thread );
-        }
-        if (old_input_shm->active && (thread = get_window_thread( old_input_shm->active )))
-        {
-            if (thread->queue == queue_from)
-            {
-                SHARED_WRITE_BEGIN( old_input_shm, input_shm_t )
-                {
-                    input_shm_t *old_shared = shared;
-                    SHARED_WRITE_BEGIN( input_shm, input_shm_t )
-                    {
-                        shared->active = old_shared->active;
-                        old_shared->active = 0;
-                    }
-                    SHARED_WRITE_END;
-                }
-                SHARED_WRITE_END;
-            }
-            release_object( thread );
-        }
-        assign_thread_input( queue_from, input );
-        release_object( input );
+        if (attach->queue_from != queue_from && (!queue_to || attach->queue_from != queue_to)) continue;
+        if (attach->queue_to != queue_from && (!queue_to || attach->queue_to != queue_to)) continue;
+        if (count++ && queue_to) break;
+        list_remove( &attach->entry );
+        free( attach );
     }
+    if (queue_to)
+    {
+        if (!count) return set_error( STATUS_INVALID_PARAMETER );
+        if (count > 1) return;
+    }
+    /* TODO: detaching a thread may create two separate thread input graphs */
+
+    if (!(new_input = create_thread_input( desktop ))) return;
+    assign_thread_input( queue_from, new_input );
+    release_object( new_input );
 }
 
 
@@ -2258,6 +2281,7 @@ static int queue_mouse_message( struct desktop *desktop, user_handle_t win, cons
         msg->lparam    = 0;
         msg->x         = x;
         msg->y         = y;
+        msg->mergeable = !(flags & MOUSEEVENTF_MOVE_NOCOALESCE);
         if (origin == IMO_INJECTED) msg_data->flags = LLMHF_INJECTED;
 
         /* specify a sender only when sending the last message */
@@ -3671,15 +3695,8 @@ DECL_HANDLER(attach_thread_input)
     if (desktop_from != desktop_to) set_error( STATUS_INVALID_PARAMETER );
     else if (!thread_to->queue || !thread_from->queue) set_error( STATUS_INVALID_PARAMETER );
     else if (thread_from == thread_to) set_error( STATUS_ACCESS_DENIED );
-    else
-    {
-        if (req->attach)
-            attach_thread_input( thread_from->queue, thread_to->queue );
-        else if (thread_from->queue->input == thread_to->queue->input)
-            detach_thread_input( thread_from->queue, desktop_from );
-        else
-            set_error( STATUS_ACCESS_DENIED );
-    }
+    else if (req->attach) attach_thread_input( thread_from->queue, thread_to->queue );
+    else detach_thread_input( thread_from->queue, thread_to->queue, desktop_from );
 
 failed:
     if (desktop_to) release_object( desktop_to );

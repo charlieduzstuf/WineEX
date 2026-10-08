@@ -119,6 +119,17 @@ sub testOctalLiteralErrors()
 end sub
 call testOctalLiteralErrors()
 
+Call ok(&HFFFFFFFF = -1, "&HFFFFFFFF <> -1")
+Call ok(&O37777777777 = -1, "&O37777777777 <> -1")
+
+sub testLiteralOverflowErrors()
+    on error resume next
+    Err.Clear : call Eval("&H100000000") : call ok(Err.number = 1002, "&H100000000 should be syntax error, got err=" & Err.number)
+    Err.Clear : call Eval("&O40000000000") : call ok(Err.number = 1002, "&O40000000000 should be syntax error, got err=" & Err.number)
+    Err.Clear : call Eval("&40000000000") : call ok(Err.number = 1002, "&40000000000 should be syntax error, got err=" & Err.number)
+end sub
+call testLiteralOverflowErrors()
+
 ' Test concat when no space and var begins with h
 hi = "y"
 x = "x" &hi
@@ -545,10 +556,8 @@ Call ok("ab " & empty = "ab ", """ab"" & empty = " & ("ab " & empty))
 Call ok(1 & 100000 = "1100000", "1 & 100000 = " & (1 & 100000))
 Call ok("ab" & x = "abxx", """ab"" & x = " & ("ab"&x))
 
-if(isEnglishLang) then
-    Call ok("" & true = "True", """"" & true = " & true)
-    Call ok(true & false = "TrueFalse", "true & false = " & (true & false))
-end if
+Call ok("" & true = "True", """"" & true = " & true)
+Call ok(true & false = "TrueFalse", "true & false = " & (true & false))
 
 call ok(true and true, "true and true is not true")
 call ok(true and not false, "true and not false is not true")
@@ -2006,6 +2015,73 @@ CheckParseErr "ReDim 5",                    1010
 CheckParseErr "Dim 5",                      1010
 CheckParseErr "Dim 1.5",                    1010
 
+Class ReservedMembersCls
+    Public [type]
+    Public [event]
+End Class
+Dim reservedObj, reservedWord
+Set reservedObj = New ReservedMembersCls
+reservedObj.type = 1
+reservedObj.event = 2
+Call ok(reservedObj.type = 1, "reservedObj.type = " & reservedObj.type)
+Call ok(reservedObj.event = 2, "reservedObj.event = " & reservedObj.event)
+
+For Each reservedWord In Array("as", "boolean", "byte", "currency", "double", "endif", "enum", "event", _
+        "implements", "integer", "like", "long", "lset", "optional", "paramarray", "raiseevent", "rset", _
+        "shared", "single", "static", "type", "typeof", "variant")
+    CheckParseErr "Dim " & reservedWord, 1010
+    CheckParseErr "Sub " & reservedWord & "() : End Sub", 1010
+    CheckParseErr "npArg = " & reservedWord, 1002
+    CheckParseErr reservedWord & " = 1", 1024
+Next
+
+Sub TestLiteralMemberAccess
+    Dim x
+    On Error Resume Next
+    Err.Clear : x = "s".p : Call ok(Err.Number = 424, "x = ""s"".p: Err.Number = " & Err.Number)
+    Err.Clear : x = "s". p : Call ok(Err.Number = 424, "x = ""s"". p: Err.Number = " & Err.Number)
+    Err.Clear : x = "s".p(1) : Call ok(Err.Number = 424, "x = ""s"".p(1): Err.Number = " & Err.Number)
+    Err.Clear : x = "s".p.q : Call ok(Err.Number = 424, "x = ""s"".p.q: Err.Number = " & Err.Number)
+    Err.Clear : x = "s".end : Call ok(Err.Number = 424, "x = ""s"".end: Err.Number = " & Err.Number)
+    Err.Clear : x = 1.5.p : Call ok(Err.Number = 424, "x = 1.5.p: Err.Number = " & Err.Number)
+    Err.Clear : x = &H10.p : Call ok(Err.Number = 424, "x = &H10.p: Err.Number = " & Err.Number)
+    Err.Clear : x = True.p : Call ok(Err.Number = 424, "x = True.p: Err.Number = " & Err.Number)
+    Err.Clear : x = False.p : Call ok(Err.Number = 424, "x = False.p: Err.Number = " & Err.Number)
+    Err.Clear : x = Nothing.p : Call ok(Err.Number = 424, "x = Nothing.p: Err.Number = " & Err.Number)
+    Err.Clear : x = Empty.p : Call ok(Err.Number = 424, "x = Empty.p: Err.Number = " & Err.Number)
+    Err.Clear : x = Null.p : Call ok(Err.Number = 424, "x = Null.p: Err.Number = " & Err.Number)
+    Err.Clear : x = #1/1/2020#.p : Call ok(Err.Number = 424, "x = #1/1/2020#.p: Err.Number = " & Err.Number)
+    Err.Clear : x = "a" & "s".p : Call ok(Err.Number = 424, "x = ""a"" & ""s"".p: Err.Number = " & Err.Number)
+    Err.Clear : x = -1.5.p : Call ok(Err.Number = 424, "x = -1.5.p: Err.Number = " & Err.Number)
+    Err.Clear : Call "s".p : Call ok(Err.Number = 424, "Call ""s"".p: Err.Number = " & Err.Number)
+    Err.Clear : Call "s".p(1) : Call ok(Err.Number = 424, "Call ""s"".p(1): Err.Number = " & Err.Number)
+End Sub
+Call TestLiteralMemberAccess
+
+Sub TestNewMemberAccess
+    Dim x, matches
+    x = New RegExp.Global
+    Call ok(x = False, "New RegExp.Global = " & x)
+    Call ok(getVT(New RegExp.Pattern) = "VT_BSTR", "getVT(New RegExp.Pattern) = " & getVT(New RegExp.Pattern))
+    Set matches = New RegExp.Execute("abc")
+    Call ok(matches.Count = 1, "New RegExp.Execute(""abc"").Count = " & matches.Count)
+    Call ok(New RegExp.Execute("abc").Count = 1, "New RegExp.Execute(""abc"").Count is not 1")
+
+    On Error Resume Next
+    Err.Clear
+    x = New RegExp.nosuchmember
+    Call ok(Err.Number = 438, "New RegExp.nosuchmember: Err.Number = " & Err.Number)
+End Sub
+Call TestNewMemberAccess
+
+CheckParseErr """s"".p = 1",                 1024
+CheckParseErr """s"".p",                     1024
+CheckParseErr """s"".p 1",                   1024
+CheckParseErr "1.5.p = 1",                   1024
+CheckParseErr "Nothing.p = 1",               1024
+CheckParseErr "New RegExp.Pattern = ""a""",  1024
+CheckParseErr "New RegExp.Execute ""a""",    1024
+
 Function ParenId(a)
     ParenId = a
 End Function
@@ -3358,6 +3434,57 @@ eraseByValArr(0) = "world"
 call TestEraseByVal(eraseByValArr)
 ok eraseByValArr(0) = "world", "eraseByValArr(0) after ByVal Erase = " & eraseByValArr(0)
 
+dim eraseCall(2)
+eraseCall(0) = "x"
+Call Erase(eraseCall)
+ok eraseCall(0) = empty, "eraseCall(0) after Call Erase = " & eraseCall(0)
+
+dim eraseNested(1)
+eraseNested(0) = Array(1, 2)
+eraseNested(1) = "kept"
+Erase eraseNested(0)
+ok getVT(eraseNested(0)) = "VT_ARRAY|VT_VARIANT*", "getVT(eraseNested(0)) after Erase = " & getVT(eraseNested(0))
+ok eraseNested(1) = "kept", "eraseNested(1) after Erase eraseNested(0) = " & eraseNested(1)
+on error resume next
+err.clear
+y = eraseNested(0)(0)
+e = err.number
+on error goto 0
+ok e = 9, "access after Erase of nested array: err.number = " & e
+
+dim eraseParen(2)
+eraseParen(0) = "x"
+on error resume next
+err.clear
+Erase(eraseParen)
+e = err.number
+on error goto 0
+ok e = 13, "Erase(eraseParen): err.number = " & e
+ok eraseParen(0) = "x", "eraseParen(0) after Erase(eraseParen) = " & eraseParen(0)
+
+on error resume next
+err.clear
+y = Erase(eraseParen)
+e = err.number
+on error goto 0
+ok e = 13, "y = Erase(eraseParen): err.number = " & e
+ok eraseParen(0) = "x", "eraseParen(0) after y = Erase(eraseParen) = " & eraseParen(0)
+
+on error resume next
+err.clear
+Erase eraseCall, eraseParen
+e = err.number
+on error goto 0
+ok e = 450, "Erase with two arguments: err.number = " & e
+ok eraseParen(0) = "x", "eraseParen(0) after Erase with two arguments = " & eraseParen(0)
+
+on error resume next
+err.clear
+Erase 5
+e = err.number
+on error goto 0
+ok e = 13, "Erase 5: err.number = " & e
+
 Class ArrClass
     Dim classarr(3)
     Dim classnoarr()
@@ -3622,8 +3749,67 @@ sub test_identifiers
     Dim property
     property = "xx"
     Call ok(property = "xx", "property = " & property & " expected ""xx""")
+
+    Dim erase
+    erase = "xx"
+    Call ok(erase = "xx", "erase = " & erase & " expected ""xx""")
 end sub
 call test_identifiers()
+
+sub test_redim_identifiers
+    Dim default, error, explicit, property, step
+
+    ReDim default(3)
+    ReDim Preserve default(4)
+    Call ok(UBound(default) = 4, "UBound(default) = " & UBound(default))
+
+    ReDim error(3)
+    ReDim Preserve error(4)
+    Call ok(UBound(error) = 4, "UBound(error) = " & UBound(error))
+
+    ReDim explicit(3)
+    ReDim Preserve explicit(4)
+    Call ok(UBound(explicit) = 4, "UBound(explicit) = " & UBound(explicit))
+
+    ReDim property(3)
+    ReDim Preserve property(4)
+    Call ok(UBound(property) = 4, "UBound(property) = " & UBound(property))
+
+    ReDim step(3)
+    ReDim Preserve step(4)
+    Call ok(UBound(step) = 4, "UBound(step) = " & UBound(step))
+end sub
+call test_redim_identifiers()
+
+sub test_identifiers_as_array
+    Dim default(2), error(2), explicit(2), property(2), step(2)
+
+    default(1) = "xx"
+    Call ok(default(1) = "xx", "default(1) = " & default(1))
+    default (2) = "yy"
+    Call ok(default(2) = "yy", "default(2) = " & default(2))
+
+    error(1) = "xx"
+    Call ok(error(1) = "xx", "error(1) = " & error(1))
+    error (2) = "yy"
+    Call ok(error(2) = "yy", "error(2) = " & error(2))
+
+    explicit(1) = "xx"
+    Call ok(explicit(1) = "xx", "explicit(1) = " & explicit(1))
+    explicit (2) = "yy"
+    Call ok(explicit(2) = "yy", "explicit(2) = " & explicit(2))
+
+    property(1) = "xx"
+    Call ok(property(1) = "xx", "property(1) = " & property(1))
+    property (2) = "yy"
+    Call ok(property(2) = "yy", "property(2) = " & property(2))
+
+    step(1) = "xx"
+    Call ok(step(1) = "xx", "step(1) = " & step(1))
+    step (2) = "yy"
+    Call ok(step(2) = "yy", "step(2) = " & step(2))
+end sub
+call test_identifiers_as_array()
 
 Class class_test_identifiers_as_function_name
     Sub Property ( par )
@@ -3640,6 +3826,13 @@ Class class_test_identifiers_as_function_name
     End Function
 
     Sub Step ( default )
+    End Sub
+
+    Function Erase ( par )
+        Erase = par
+    End Function
+
+    Sub Explicit2 ( erase )
     End Sub
 End Class
 
@@ -3685,6 +3878,65 @@ End Function
 Dim objShadow : Set objShadow = New TestLocalDimShadowsGlobalFunc
 objShadow.TestShadow
 objShadow.TestPrivate
+
+Class class_test_assign_me
+    Public evaluated
+
+    Function Value()
+        evaluated = True
+        Value = 1
+    End Function
+
+    Sub Test()
+        On Error Resume Next
+        Err.Clear
+        Me = Value()
+        Call ok(Err.Number = 501, "Me = Value(): Err.Number = " & Err.Number)
+        Call ok(evaluated, "Me = Value(): right side was not evaluated")
+        Err.Clear
+        Me = Nothing
+        Call ok(Err.Number = 501, "Me = Nothing: Err.Number = " & Err.Number)
+    End Sub
+End Class
+
+sub test_assign_me
+    Dim obj
+    Set obj = New class_test_assign_me
+    obj.Test
+
+    On Error Resume Next
+    Err.Clear
+    Me = 1
+    Call ok(Err.Number = 501, "Me = 1 outside of a class: Err.Number = " & Err.Number)
+
+    Err.Clear
+    Set (1) = Nothing
+    Call ok(Err.Number = 501, "Set (1) = Nothing: Err.Number = " & Err.Number)
+    On Error GoTo 0
+
+    Set ((obj)) = Nothing
+    Call ok(obj Is Nothing, "Set ((obj)) = Nothing did not change obj")
+end sub
+call test_assign_me()
+
+Sub LocalNamedLikeSub
+    Dim LocalNamedLikeSub
+    LocalNamedLikeSub = 5
+    Call ok(LocalNamedLikeSub = 5, "LocalNamedLikeSub = " & LocalNamedLikeSub)
+End Sub
+Call LocalNamedLikeSub
+
+Sub ParamNamedLikeOtherSub(test_dotIdentifiers)
+    Call ok(test_dotIdentifiers = 3, "test_dotIdentifiers = " & test_dotIdentifiers)
+End Sub
+Call ParamNamedLikeOtherSub(3)
+
+Class ParamNamedLikeClass
+    Public Function Test(ParamNamedLikeClass)
+        Test = ParamNamedLikeClass
+    End Function
+End Class
+Call ok((New ParamNamedLikeClass).Test(4) = 4, "parameter named like its class failed")
 
 sub test_dotIdentifiers
     ' test keywords that can also be an identifier after a dot
@@ -3969,6 +4221,55 @@ funcCalled = ""
 'obj()
 'call ok(funcCalled = "init","funcCalled=" & funcCalled)
 
+class PropReplacesMethodTest
+    public sub a(x)
+        call ok(false, "sub a called")
+    end sub
+    public property get a
+        a = "get a"
+    end property
+
+    public function f
+        call ok(false, "function f called")
+    end function
+    private property get f
+        f = "get f"
+    end property
+
+    public sub l
+        call ok(false, "sub l called")
+    end sub
+    public property let l(v)
+        funcCalled = "let l" & v
+    end property
+
+    public default sub d
+        call ok(false, "sub d called")
+    end sub
+    public property get d
+        d = "get d"
+    end property
+end class
+
+set obj = new PropReplacesMethodTest
+call ok(obj.a = "get a", "obj.a = " & obj.a)
+call ok(obj.d = "get d", "obj.d = " & obj.d)
+call ok(obj() = "get d", "obj() = " & obj())
+funcCalled = ""
+obj.l = 1
+call ok(funcCalled = "let l1", "funcCalled=" & funcCalled)
+on error resume next
+err.clear
+obj.a 1
+call ok(err.number = 450, "obj.a 1 err.number = " & err.number)
+err.clear
+obj.f
+call ok(err.number = 438, "obj.f err.number = " & err.number)
+err.clear
+obj.l
+call ok(err.number = 438, "obj.l err.number = " & err.number)
+on error goto 0
+
 with nothing
 end with
 
@@ -3978,6 +4279,22 @@ with x
      ok .prop = 1, ".prop = "&.prop
 end with
 ok x.prop = 1, "x.prop = " & x.prop
+
+with x
+     if true then.prop = 2
+     ok .prop = 2, "then.prop = " & .prop
+     if false then .prop = 3 else.prop = 4
+     ok .prop = 4, "else.prop = " & .prop
+end with
+
+on error resume next
+err.clear
+if true then.prop = 5
+Call ok(err.number = 505, "then.prop outside with err.number = " & err.number)
+err.clear
+if true then y = .prop
+Call ok(err.number = 505, ".prop outside with err.number = " & err.number)
+on error goto 0
 
 with new TestPropSyntax
      .prop = 1

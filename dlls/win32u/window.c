@@ -347,21 +347,31 @@ static RECT get_client_surface_rects( HWND toplevel, HWND hwnd, RECT *monitor_re
 
     get_win_monitor_dpi( hwnd, &raw_dpi );
     *monitor_rect = map_dpi_rect( rect, dpi, raw_dpi );
+
+    /* use toplevel visible rect relative position, so drivers can then assume it */
     OffsetRect( monitor_rect, monitor_rects.client.left - monitor_rects.visible.left,
                 monitor_rects.client.top - monitor_rects.visible.top );
+    OffsetRect( &rect, rects.client.left - rects.visible.left,
+                rects.client.top - rects.visible.top );
 
     return rect;
 }
 
 static void client_surface_update_locked( struct client_surface *surface )
 {
+    RECT virtual_rect = surface->virtual_rect, monitor_rect = surface->monitor_rect;
+    HWND toplevel = surface->toplevel;
+
     surface->toplevel = NtUserGetAncestor( surface->hwnd, GA_ROOT );
     surface->virtual_rect = get_client_surface_rects( surface->toplevel, surface->hwnd, &surface->monitor_rect );
 
     TRACE( "updating %s, toplevel %p, virtual_rect %s, monitor_rect %s\n", debugstr_client_surface( surface ), surface->toplevel,
            wine_dbgstr_rect( &surface->virtual_rect ), wine_dbgstr_rect( &surface->monitor_rect ) );
     surface->funcs->update( surface );
-    InterlockedExchange( &surface->updated, 1 );
+
+    surface->updated = surface->updated || surface->toplevel != toplevel ||
+                       !EqualRect( &surface->virtual_rect, &virtual_rect ) ||
+                       !EqualRect( &surface->monitor_rect, &monitor_rect );
 }
 
 void update_client_surfaces( HWND hwnd )
@@ -384,22 +394,23 @@ void update_client_surfaces( HWND hwnd )
     pthread_mutex_unlock( &surfaces_lock );
 }
 
-void *client_surface_create( UINT size, const struct client_surface_funcs *funcs, HWND hwnd, int format )
+void *client_surface_create( const struct client_surface_funcs *funcs, HWND hwnd, int format, BOOL raw )
 {
     HWND toplevel = NtUserGetAncestor( hwnd, GA_ROOT );
     struct client_surface *surface;
 
-    if (!(surface = calloc( 1, size ))) return NULL;
+    if (!(surface = calloc( 1, funcs->size ))) return NULL;
     surface->funcs = funcs;
     surface->ref = 1;
     surface->hwnd = hwnd;
     surface->format = format;
+    surface->raw = raw;
     surface->toplevel = toplevel;
     surface->virtual_rect = get_client_surface_rects( toplevel, hwnd, &surface->monitor_rect );
     list_init( &surface->entry );
 
-    TRACE( "created %s, format %d, toplevel %p, virtual_rect %s, monitor_rect %s\n", debugstr_client_surface( surface ),
-           format, toplevel, wine_dbgstr_rect( &surface->virtual_rect ), wine_dbgstr_rect( &surface->monitor_rect ) );
+    TRACE( "created %s, format %d, raw %u, toplevel %p, virtual_rect %s, monitor_rect %s\n", debugstr_client_surface( surface ),
+           format, raw, toplevel, wine_dbgstr_rect( &surface->virtual_rect ), wine_dbgstr_rect( &surface->monitor_rect ) );
     return surface;
 }
 
@@ -439,6 +450,36 @@ void client_surface_update( struct client_surface *surface )
     pthread_mutex_unlock( &surfaces_lock );
 }
 
+BOOL client_surface_set_color_space( struct client_surface *surface, VkColorSpaceKHR color_space )
+{
+    BOOL ret;
+
+    pthread_mutex_lock( &surfaces_lock );
+    if (!surface->hwnd || !surface->funcs->set_color_space) ret = FALSE;
+    else ret = surface->funcs->set_color_space( surface, color_space );
+    pthread_mutex_unlock( &surfaces_lock );
+
+    return ret;
+}
+
+BOOL client_surface_get_size( struct client_surface *surface, SIZE *virtual_size, SIZE *monitor_size )
+{
+    BOOL updated;
+
+    pthread_mutex_lock( &surfaces_lock );
+
+    virtual_size->cx = max( 1, surface->virtual_rect.right - surface->virtual_rect.left );
+    virtual_size->cy = max( 1, surface->virtual_rect.bottom - surface->virtual_rect.top );
+    monitor_size->cx = max( 1, surface->monitor_rect.right - surface->monitor_rect.left );
+    monitor_size->cy = max( 1, surface->monitor_rect.bottom - surface->monitor_rect.top );
+    updated = surface->updated;
+    surface->updated = FALSE;
+
+    pthread_mutex_unlock( &surfaces_lock );
+
+    return updated;
+}
+
 void use_window_client_surface( struct client_surface *surface, BOOL use )
 {
     TRACE( "surface %s, use %u\n", debugstr_client_surface( surface ), use );
@@ -463,7 +504,7 @@ void use_window_client_surface( struct client_surface *surface, BOOL use )
     pthread_mutex_unlock( &surfaces_lock );
 }
 
-struct client_surface *get_unused_client_surface( HWND hwnd, int format )
+struct client_surface *get_unused_client_surface( HWND hwnd, int format, BOOL raw )
 {
     struct client_surface *surface;
 
@@ -471,7 +512,7 @@ struct client_surface *get_unused_client_surface( HWND hwnd, int format )
 
     LIST_FOR_EACH_ENTRY( surface, &unused_surfaces, struct client_surface, entry )
     {
-        if (surface->hwnd != hwnd || surface->format != format) continue;
+        if (surface->hwnd != hwnd || surface->format != format || surface->raw != raw) continue;
         client_surface_update_locked( surface ); /* refresh it before creating GL/VK drawable */
         list_remove( &surface->entry ); /* take over its reference */
         list_init( &surface->entry );
@@ -482,7 +523,7 @@ struct client_surface *get_unused_client_surface( HWND hwnd, int format )
     pthread_mutex_unlock( &surfaces_lock );
 
     if (surface) TRACE( "Reusing surface %s\n", debugstr_client_surface( surface ) );
-    return surface ? surface : user_driver->pCreateClientSurface( hwnd, format );
+    return surface ? surface : user_driver->pCreateClientSurface( hwnd, format, raw );
 }
 
 BOOL is_client_surface_window( struct client_surface *surface, HWND hwnd )
@@ -1529,6 +1570,11 @@ static LONG_PTR set_window_long_internal( HWND hwnd, INT offset, UINT size,
     }
     if (win == WND_OTHER_PROCESS)
     {
+        if (offset == GWLP_WNDPROC)
+        {
+            RtlSetLastWin32Error( ERROR_ACCESS_DENIED );
+            return 0;
+        }
         if (offset > 32767 || offset < -32767)
         {
             RtlSetLastWin32Error( ERROR_INVALID_INDEX );
@@ -2108,6 +2154,11 @@ static RECT get_visible_rect( HWND hwnd, BOOL shaped, UINT style, UINT ex_style,
     visible_rect.bottom -= rect.bottom;
     if (visible_rect.top >= visible_rect.bottom) visible_rect.bottom = visible_rect.top + 1;
     if (visible_rect.left >= visible_rect.right) visible_rect.right = visible_rect.left + 1;
+
+    /* if client rect extends into non-visible area, use the full window rect */
+    if (rects->client.top < visible_rect.top || rects->client.left < visible_rect.left ||
+        rects->client.bottom > visible_rect.bottom || rects->client.right > visible_rect.right)
+        visible_rect = rects->window;
 
     TRACE( "hwnd %p, rects %s, style %#x, ex_style %#x -> visible_rect %s\n", hwnd,
            debugstr_window_rects( rects ), style, ex_style, wine_dbgstr_rect( &visible_rect ) );
@@ -4547,7 +4598,7 @@ MINMAXINFO get_min_max_info( HWND hwnd )
 
     minmax.ptMaxSize.x = rc.right - rc.left;
     minmax.ptMaxSize.y = rc.bottom - rc.top;
-    if (style & (WS_DLGFRAME | WS_BORDER))
+    if (style & (WS_DLGFRAME | WS_BORDER) && !(exstyle &  WS_EX_TOOLWINDOW))
     {
         minmax.ptMinTrackSize.x = get_system_metrics( SM_CXMINTRACK );
         minmax.ptMinTrackSize.y = get_system_metrics( SM_CYMINTRACK );

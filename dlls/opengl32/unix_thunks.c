@@ -1114,7 +1114,7 @@ static NTSTATUS gl_glGetString( void *args )
     struct glGetString_params *params = args;
     const struct opengl_funcs *funcs = params->teb->glTable;
     if (!funcs->p_glGetString) return STATUS_NOT_IMPLEMENTED;
-    params->ret = wrap_glGetString( params->teb, params->name, funcs->p_glGetString );
+    params->ret = funcs->p_glGetString( params->name );
     return STATUS_SUCCESS;
 }
 
@@ -9595,7 +9595,7 @@ static NTSTATUS ext_glGetFramebufferParameterivEXT( void *args )
     struct glGetFramebufferParameterivEXT_params *params = args;
     const struct opengl_funcs *funcs = params->teb->glTable;
     if (!funcs->p_glGetFramebufferParameterivEXT) return STATUS_NOT_IMPLEMENTED;
-    wrap_glGetFramebufferParameteriv( params->teb, params->framebuffer, params->pname, params->params, funcs->p_glGetFramebufferParameterivEXT );
+    wrap_glGetFramebufferParameterivEXT( params->teb, params->framebuffer, params->pname, params->params, funcs->p_glGetFramebufferParameterivEXT );
     return STATUS_SUCCESS;
 }
 
@@ -27930,6 +27930,7 @@ const unixlib_entry_t __wine_unix_call_funcs[] =
     process_attach,
     thread_attach,
     process_detach,
+    set_root_context,
     get_pixel_formats,
     wgl_wglDeleteContext,
     wgl_wglGetPixelFormat,
@@ -31029,6 +31030,8 @@ C_ASSERT(ARRAYSIZE(__wine_unix_call_funcs) == funcs_count);
 
 extern NTSTATUS wow64_thread_attach( void *args );
 extern NTSTATUS wow64_process_detach( void *args );
+extern NTSTATUS wow64_set_root_context( void *args );
+
 extern NTSTATUS wow64_get_pixel_formats( void *args );
 
 static NTSTATUS wow64_wgl_wglDeleteContext( void *args )
@@ -32896,7 +32899,7 @@ static NTSTATUS wow64_gl_glGetString( void *args )
     const GLubyte *ret;
     const struct opengl_funcs *funcs = teb->glTable;
     if (!funcs->p_glGetString) return STATUS_NOT_IMPLEMENTED;
-    ret = wrap_glGetString( teb, params->name, funcs->p_glGetString );
+    ret = funcs->p_glGetString( params->name );
     return return_wow64_string( ret, &params->ret );
 }
 
@@ -48170,7 +48173,7 @@ static NTSTATUS wow64_ext_glGetFramebufferParameterivEXT( void *args )
     TEB *teb = get_teb64( params->teb );
     const struct opengl_funcs *funcs = teb->glTable;
     if (!funcs->p_glGetFramebufferParameterivEXT) return STATUS_NOT_IMPLEMENTED;
-    wrap_glGetFramebufferParameteriv( teb, params->framebuffer, params->pname, ULongToPtr(params->params), funcs->p_glGetFramebufferParameterivEXT );
+    wrap_glGetFramebufferParameterivEXT( teb, params->framebuffer, params->pname, ULongToPtr(params->params), funcs->p_glGetFramebufferParameterivEXT );
     return STATUS_SUCCESS;
 }
 
@@ -81577,6 +81580,7 @@ const unixlib_entry_t __wine_unix_call_wow64_funcs[] =
     process_attach,
     wow64_thread_attach,
     wow64_process_detach,
+    wow64_set_root_context,
     wow64_get_pixel_formats,
     wow64_wgl_wglDeleteContext,
     wow64_wgl_wglGetPixelFormat,

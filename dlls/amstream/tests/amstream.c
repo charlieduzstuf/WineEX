@@ -3156,7 +3156,7 @@ static void test_media_types(void)
         ok(hr == VFW_E_TYPE_NOT_ACCEPTED, "Got hr %#lx for subtype %s.\n",
             hr, wine_dbgstr_guid(rejected_subtypes[i].guid));
         hr = IPin_ReceiveConnection(pin, &source.source.pin.IPin_iface, &mt);
-        ok(hr == (i < 4) ? S_OK : VFW_E_TYPE_NOT_ACCEPTED, "Got hr %#lx on ReceiveConnection for subtype %s.\n", hr,
+        ok(hr == ((i < 4) ? S_OK : VFW_E_TYPE_NOT_ACCEPTED), "Got hr %#lx on ReceiveConnection for subtype %s.\n", hr,
                 wine_dbgstr_guid(rejected_subtypes[i].guid));
 
         if (hr == S_OK)
@@ -9053,6 +9053,25 @@ static void test_ddrawstream_mem_allocator(void)
     ok(hr == S_OK, "Got hr %#lx.\n", hr);
 
     hr = IMediaStream_QueryInterface(stream, &IID_IPin, (void **)&pin);
+    ok(hr == S_OK, "Got hr %#lx.\n", hr);
+
+    hr = IMemAllocator_GetBuffer(ddraw_allocator, &media_sample1, NULL, NULL, 0);
+    ok(hr == VFW_E_NOT_COMMITTED, "Got hr %#lx.\n", hr);
+    hr = IMemAllocator_Commit(mem_allocator);
+    ok(hr == S_OK, "Got hr %#lx.\n", hr);
+    hr = IPin_BeginFlush(pin);
+    ok(hr == S_OK, "Got hr %#lx.\n", hr);
+    hr = IMemAllocator_GetBuffer(ddraw_allocator, &media_sample1, NULL, NULL, 0);
+    ok(hr == VFW_E_NOT_COMMITTED, "Got hr %#lx.\n", hr);
+    hr = IPin_EndFlush(pin);
+    ok(hr == S_OK, "Got hr %#lx.\n", hr);
+    if (0)
+    {
+        /* hangs, mem allocator is still committed after _EndFlush(). */
+        hr = IMemAllocator_GetBuffer(ddraw_allocator, &media_sample1, NULL, NULL, 0);
+        ok(hr == VFW_E_NOT_COMMITTED, "Got hr %#lx.\n", hr);
+    }
+    hr = IMemAllocator_Decommit(mem_allocator);
     ok(hr == S_OK, "Got hr %#lx.\n", hr);
 
     /* Connect with a bottom-up format. Note that the media type set on the

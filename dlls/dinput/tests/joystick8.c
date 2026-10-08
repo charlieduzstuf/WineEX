@@ -2126,10 +2126,8 @@ static void test_simple_joystick( DWORD version )
     ok( hr == DI_OK, "GetProperty DIPROP_GUIDANDPATH returned %#lx\n", hr );
     ok( IsEqualGUID( &prop_guid_path.guidClass, &GUID_DEVCLASS_HIDCLASS ), "got guid %s\n",
         debugstr_guid( &prop_guid_path.guidClass ) );
-    todo_wine
     ok( !wcsncmp( prop_guid_path.wszPath, expect_path, wcslen( expect_path ) ), "got path %s\n",
         debugstr_w(prop_guid_path.wszPath) );
-    todo_wine
     ok( !wcscmp( wcsrchr( prop_guid_path.wszPath, '&' ), expect_path_end ), "got path %s\n",
         debugstr_w(prop_guid_path.wszPath) );
 
@@ -6142,7 +6140,7 @@ static void test_joystick_instance_guid( DWORD version )
 #undef MAKE_DESC
 #undef MAKE_ATTR
     };
-    const GUID instance_uuid_init = {0x00000000, 0x0000, 0x1000, {0x80, 0x00, 0x00, 0x00, 'D', 'E', 'S', 'T'}};
+    const GUID instance_uuid_init = {0x00000000, 0x0000, 0x1000, {0x80, 0x00, 'D', 'E', 'S', 'T', 0x00, 0x00}};
     struct dinput di = {.version = version}, di2 = {.version = version};
     GUID expect_instances[4], instances[64], *instances_end;
     IDirectInputDevice8W *device;
@@ -6171,6 +6169,7 @@ static void test_joystick_instance_guid( DWORD version )
     hr = dinput_enum_devices( &di, find_test_device_instances, &instances_end );
     ok( hr == DI_OK, "Unexpected hr %#lx.\n", hr );
     ok( instances_end == instances + 4, "Unexpected count %Iu.\n", instances_end - instances );
+    ok( !memcmp( instances[0].Data4 + 2, instance_uuid_init.Data4 + 2, 6 ), "Unexpected guid %s\n", debugstr_guid(instances) );
 
     for (UINT i = 0; i < instances_end - instances; i++)
     {
@@ -6956,13 +6955,26 @@ START_TEST( joystick8 )
         test_simple_joystick( 0x700 );
         test_simple_joystick( 0x800 );
 
-        test_joystick_instance_guid( 0x500 );
-        test_joystick_instance_guid( 0x700 );
-        test_joystick_instance_guid( 0x800 );
+        /*
+         * These tests are currently broken on wine because they rely upon
+         * the enumeration order of SetupDiGetClassDevs()/CM_Get_Device_Interface_List()
+         * returning HID interfaces in the order of creation, which is what
+         * native does. Wine currently returns interfaces in alphabetical order,
+         * which only worked before because our device instance ID values were implemented
+         * incorrectly.
+         */
+        if (!winetest_platform_is_wine)
+        {
+            test_joystick_instance_guid( 0x500 );
+            test_joystick_instance_guid( 0x700 );
+            test_joystick_instance_guid( 0x800 );
 
-        test_joystick_id( 0x500 );
-        test_joystick_id( 0x700 );
-        test_joystick_id( 0x800 );
+            test_joystick_id( 0x500 );
+            test_joystick_id( 0x700 );
+            test_joystick_id( 0x800 );
+        }
+        else
+            skip("Skipping tests that rely upon enumeration order on wine.\n");
 
         test_many_axes_joystick();
         test_driving_wheel_axes();

@@ -63,6 +63,7 @@
 #endif
 
 #ifdef __APPLE__
+#include <CoreFoundation/CoreFoundation.h>
 #include <mach/mach.h>
 #endif
 #ifdef __FreeBSD__
@@ -1170,24 +1171,6 @@ void *get_cpu_area( struct thread_data *data, USHORT machine )
 
 
 /***********************************************************************
- *           set_thread_id
- */
-void set_thread_id( struct thread_data *data )
-{
-    TEB *teb = data->teb;
-    WOW_TEB *wow_teb = get_wow_teb( teb );
-
-    teb->RealClientId = teb->ClientId = make_client_id( pid, data->tid );
-    if (wow_teb)
-    {
-        wow_teb->ClientId.UniqueProcess = pid;
-        wow_teb->ClientId.UniqueThread  = data->tid;
-        wow_teb->RealClientId = wow_teb->ClientId;
-    }
-}
-
-
-/***********************************************************************
  *           init_thread_stack
  */
 NTSTATUS init_thread_stack( TEB *teb, ULONG_PTR limit, SIZE_T reserve_size, SIZE_T commit_size )
@@ -1456,7 +1439,6 @@ NTSTATUS WINAPI NtCreateThreadEx( HANDLE *handle, ACCESS_MASK access, OBJECT_ATT
 
     if ((status = virtual_alloc_teb( data ))) goto done;
     teb = data->teb;
-    set_thread_id( data );
 
     if ((status = init_thread_stack( teb, get_zero_bits_limit( zero_bits ), stack_reserve, stack_commit )))
         goto done;
@@ -1581,13 +1563,41 @@ void wait_suspend( CONTEXT *context )
 }
 
 
+#ifdef __APPLE__
+/**********************************************************************
+ *           apple_spawn_main_thread
+ */
+NTSTATUS apple_spawn_main_thread( void )
+{
+    struct thread_data *data;
+    HANDLE handle;
+    NTSTATUS status;
+    ULONG flags = THREAD_CREATE_FLAGS_BYPASS_PROCESS_FREEZE;
+    CFRunLoopSourceContext context = { .perform = (void (*)(void *))server_init_thread };
+    CFRunLoopSourceRef source;
+
+    if ((status = create_server_thread( &handle, &data, THREAD_ALL_ACCESS, NULL, NULL, NULL, flags, TRUE )))
+        return status;
+    NtClose( handle );
+
+    context.info = data;
+    source = CFRunLoopSourceCreate( NULL, 0, &context );
+    CFRunLoopAddSource( CFRunLoopGetMain(), source, kCFRunLoopCommonModes );
+    CFRunLoopSourceSignal( source );
+    CFRunLoopWakeUp( CFRunLoopGetMain() );
+    CFRelease( source );
+    return STATUS_SUCCESS;
+}
+#endif
+
+
 /**********************************************************************
  *           send_debug_event
  *
  * Send an EXCEPTION_DEBUG_EVENT event to the debugger.
  */
 NTSTATUS send_debug_event( struct thread_data *data, EXCEPTION_RECORD *rec,
-                           CONTEXT *context, BOOL first_chance, BOOL exception )
+                           CONTEXT *context, BOOL first_chance )
 {
     unsigned int ret;
     DWORD i;
@@ -1631,7 +1641,7 @@ NTSTATUS send_debug_event( struct thread_data *data, EXCEPTION_RECORD *rec,
 
         contexts_to_server( server_contexts, context );
         server_contexts[0].flags |= SERVER_CTX_EXEC_SPACE;
-        server_contexts[0].exec_space.space.space = exception ? EXEC_SPACE_EXCEPTION : EXEC_SPACE_SYSCALL;
+        server_contexts[0].exec_space.space.space = EXEC_SPACE_EXCEPTION;
         server_select( &select_op, offsetof( union select_op, wait.handles[1] ), SELECT_INTERRUPTIBLE,
                        TIMEOUT_INFINITE, server_contexts, NULL );
 
@@ -1655,7 +1665,7 @@ NTSTATUS send_debug_event( struct thread_data *data, EXCEPTION_RECORD *rec,
 NTSTATUS WINAPI NtRaiseException( EXCEPTION_RECORD *rec, CONTEXT *context, BOOL first_chance )
 {
     struct thread_data *data = get_thread_data();
-    NTSTATUS status = send_debug_event( data, rec, context, first_chance, !(is_win64 || is_wow64()) );
+    NTSTATUS status = send_debug_event( data, rec, context, first_chance );
 
     if (status == DBG_CONTINUE || status == DBG_EXCEPTION_HANDLED)
         return NtContinue( context, FALSE );
@@ -2536,17 +2546,16 @@ NTSTATUS WINAPI NtSetInformationThread( HANDLE handle, THREADINFOCLASS class,
 
     case ThreadAffinityMask:
     {
-        const ULONG_PTR affinity_mask = get_system_affinity_mask();
         ULONG_PTR req_aff;
 
         if (length != sizeof(ULONG_PTR)) return STATUS_INVALID_PARAMETER;
-        req_aff = *(const ULONG_PTR *)data & affinity_mask;
-        if (!req_aff) return STATUS_INVALID_PARAMETER;
+        req_aff = *(const ULONG_PTR *)data;
 
         SERVER_START_REQ( set_thread_info )
         {
             req->handle   = wine_server_obj_handle( handle );
             req->affinity = req_aff;
+            req->system_affinity = get_system_affinity_mask();
             req->mask     = SET_THREAD_INFO_AFFINITY;
             status = wine_server_call( req );
         }
@@ -2582,8 +2591,8 @@ NTSTATUS WINAPI NtSetInformationThread( HANDLE handle, THREADINFOCLASS class,
 
     case ThreadGroupInformation:
     {
-        const ULONG_PTR affinity_mask = get_system_affinity_mask();
         const GROUP_AFFINITY *req_aff;
+        ULONG_PTR affinity_mask;
 
         if (length != sizeof(*req_aff)) return STATUS_INVALID_PARAMETER;
         if (!data) return STATUS_ACCESS_VIOLATION;
@@ -2595,13 +2604,13 @@ NTSTATUS WINAPI NtSetInformationThread( HANDLE handle, THREADINFOCLASS class,
 
         /* Wine only supports max 64 processors */
         if (req_aff->Group) return STATUS_INVALID_PARAMETER;
-        if (req_aff->Mask & ~affinity_mask) return STATUS_INVALID_PARAMETER;
-        if (!req_aff->Mask) return STATUS_INVALID_PARAMETER;
+        affinity_mask = req_aff->Mask;
         SERVER_START_REQ( set_thread_info )
         {
             req->handle   = wine_server_obj_handle( handle );
-            req->affinity = req_aff->Mask;
-            req->mask     = SET_THREAD_INFO_AFFINITY;
+            req->affinity = affinity_mask;
+            req->system_affinity = get_system_affinity_mask();
+            req->mask     = SET_THREAD_INFO_GROUP_AFFINITY;
             status = wine_server_call( req );
         }
         SERVER_END_REQ;
@@ -2749,21 +2758,20 @@ ULONG WINAPI NtGetCurrentProcessorNumber(void)
     }
 #endif
 
-    if (peb->NumberOfProcessors > 1)
+    if (cpu_count > 1)
     {
         ULONG_PTR thread_mask, processor_mask;
 
         if (!NtQueryInformationThread( GetCurrentThread(), ThreadAffinityMask,
                                        &thread_mask, sizeof(thread_mask), NULL ))
         {
-            for (processor = 0; processor < peb->NumberOfProcessors; processor++)
+            for (processor = 0; processor < cpu_count; processor++)
             {
                 processor_mask = (1 << processor);
                 if (thread_mask & processor_mask)
                 {
                     if (thread_mask != processor_mask)
-                        FIXME( "need multicore support (%d processors)\n",
-                               peb->NumberOfProcessors );
+                        FIXME( "need multicore support (%d processors)\n", cpu_count );
                     return processor;
                 }
             }

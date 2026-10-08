@@ -308,6 +308,7 @@ static void dump_set_thread_info_request( const struct set_thread_info_request *
     fprintf( stderr, ", priority=%d", req->priority );
     fprintf( stderr, ", base_priority=%d", req->base_priority );
     dump_uint64( ", affinity=", &req->affinity );
+    dump_uint64( ", system_affinity=", &req->system_affinity );
     dump_uint64( ", entry_point=", &req->entry_point );
     fprintf( stderr, ", token=%04x", req->token );
     fprintf( stderr, ", disable_boost=%d", req->disable_boost );
@@ -647,12 +648,14 @@ static void dump_open_file_object_request( const struct open_file_object_request
     fprintf( stderr, ", rootdir=%04x", req->rootdir );
     fprintf( stderr, ", sharing=%08x", req->sharing );
     fprintf( stderr, ", options=%08x", req->options );
+    dump_uint64( ", async_user=", &req->async_user );
     dump_varargs_unicode_str( ", filename=", cur_size );
 }
 
 static void dump_open_file_object_reply( const struct open_file_object_reply *req )
 {
     fprintf( stderr, " handle=%04x", req->handle );
+    fprintf( stderr, ", wait=%04x", req->wait );
 }
 
 static void dump_alloc_file_handle_request( const struct alloc_file_handle_request *req )

@@ -12,3 +12,5 @@ include/stamp-h
 /wine
 *-windows/
 *-unix/
+license.txt
+UnRAR.exe
